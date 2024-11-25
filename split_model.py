@@ -6,6 +6,8 @@ import math
 from collections import defaultdict
 from torch.distributions.normal import Normal
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 class LinearReLU(nn.Module):
     
     def __init__(self, dim_in, dim_out, bias=False):
@@ -320,9 +322,9 @@ class BaselineModel(nn.Module):
     
     def get_x(self, x):
         _, x1, s1, t1, r1 = self.loader.sample_batch(self.batch_size)
-        x['x'] = x1.cuda()
-        x['S'] = torch.tensor(s1-1, device='cuda')
-        x['T'] = torch.tensor(t1, device='cuda')
+        x['x'] = x1.to(device)
+        x['S'] = torch.tensor(s1-1, device=device)
+        x['T'] = torch.tensor(t1, device=device)
         #x['R'] = r1.cuda()
         return x
     
@@ -385,8 +387,8 @@ class BaselineModel(nn.Module):
             #x['R_p_' + prop + '1'] = r_s1
             #x['R_p_' + prop + '2'] = r_s2
 
-            x['x_p_' + prop + '1'] = samples1.cuda()
-            x['x_p_' + prop + '2'] = samples2.cuda()
+            x['x_p_' + prop + '1'] = samples1.to(device)
+            x['x_p_' + prop + '2'] = samples2.to(device)
         return x
     
     def collapsed_apply(self, x, f, *args, **kwargs):
@@ -526,10 +528,10 @@ class SplitLatentModel(BaselineModel):
     
     def get_s_t_prop(self, x, prop):
         if 'x_p_' + prop + '1' not in x or 'x_p_' + prop + '2' not in x:
-            x = self.get_x_prop(x, prop)
+            x = self.get_x_prop(x, prop) # obtain x1 and x2
         if 's_p_' + prop + '1' not in x or 't_p_' + prop + '1' not in x or 's_p_' + prop + '2' not in x or 't_p_' + prop + '2' not in x:
-            s1, t1 = self.collapsed_split_apply(x['x_p_' + prop + '1'], self.subject_task_encode)
-            s2, t2 = self.collapsed_split_apply(x['x_p_' + prop + '2'], self.subject_task_encode)
+            s1, t1 = self.collapsed_split_apply(x['x_p_' + prop + '1'], self.subject_task_encode) # obtain subject and task embeddings for x1
+            s2, t2 = self.collapsed_split_apply(x['x_p_' + prop + '2'], self.subject_task_encode) # obtain subject and task embeddings for x1
             x['s_p_' + prop + '1'] = s1
             x['t_p_' + prop + '1'] = t1
             x['s_p_' + prop + '2'] = s2
@@ -673,7 +675,7 @@ class SplitLatentModel(BaselineModel):
                         tasks2 = np.random.choice(self.loader.unique_tasks, Q_batch_size, replace=True)
                         all_subjects = np.concatenate([subjects1, subjects1, subjects2, subjects2])
                         all_tasks = np.concatenate([tasks1, tasks2, tasks1, tasks2])
-                        all_x = self.loader.sample_by_condition(all_subjects, all_tasks).cuda()
+                        all_x = self.loader.sample_by_condition(all_subjects, all_tasks).to(device)
                         all_s, all_t = self.subject_task_encode(all_x)
                         s11, t11 = all_s[:Q_batch_size], all_t[:Q_batch_size]
                         s12, t12 = all_s[Q_batch_size:2*Q_batch_size], all_t[Q_batch_size:2*Q_batch_size]

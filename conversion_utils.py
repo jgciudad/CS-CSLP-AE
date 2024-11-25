@@ -1,8 +1,9 @@
-
 import numpy as np
 import torch
 from torch.nn import functional as F
 from collections import defaultdict
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 @torch.inference_mode(True)
 def sample_latents(loader, subject_latents, task_latents, target_subject, target_task, n=2000, specific_task='all', specific_subject='all'):
@@ -48,8 +49,8 @@ def sample_latents(loader, subject_latents, task_latents, target_subject, target
 def reconstruct(model, convert_subject_latents, convert_task_latents, batch_size=2048):
     num_latents = convert_subject_latents.shape[0]
     num_batches = int(np.ceil(num_latents / batch_size))
-    convert_subject_latents = torch.unflatten(torch.tensor(convert_subject_latents, device='cuda'), 1, (model.latent_dim, model.latent_seqs))
-    convert_task_latents = torch.unflatten(torch.tensor(convert_task_latents, device='cuda'), 1, (model.latent_dim, model.latent_seqs))
+    convert_subject_latents = torch.unflatten(torch.tensor(convert_subject_latents, device=device), 1, (model.latent_dim, model.latent_seqs))
+    convert_task_latents = torch.unflatten(torch.tensor(convert_task_latents, device=device), 1, (model.latent_dim, model.latent_seqs))
     reconstructions = []
     for i in range(num_batches):
         start_idx = i * batch_size
@@ -117,10 +118,10 @@ def get_reconstructed_erps(model, loader, subject_latents, task_latents, t_spec,
 @torch.inference_mode(True)
 def get_conversion_results(model, loader, subject_latents, task_latents, target_subject, target_task1, target_task2, channel, n):
     real_erp1 = loader.data[(loader.subjects == target_subject) & (loader.tasks == target_task1)]
-    real_erp1 = real_erp1.cuda() * loader.data_std + loader.data_mean
+    real_erp1 = real_erp1.to(device) * loader.data_std + loader.data_mean
     real_erp1 = real_erp1.mean(0)
     real_erp2 = loader.data[(loader.subjects == target_subject) & (loader.tasks == target_task2)]
-    real_erp2 = real_erp2.cuda() * loader.data_std + loader.data_mean
+    real_erp2 = real_erp2.to(device) * loader.data_std + loader.data_mean
     real_erp2 = real_erp2.mean(0)
     recon_erp_ss1, recon_erp_ss2 = get_reconstructed_erps(model, loader, subject_latents, task_latents, 'same', 'same', target_subject, target_task1, target_task2, n)
     recon_erp_sd1, recon_erp_sd2 = get_reconstructed_erps(model, loader, subject_latents, task_latents, 'same', 'different', target_subject, target_task1, target_task2, n)

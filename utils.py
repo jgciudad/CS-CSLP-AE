@@ -13,6 +13,7 @@ import seaborn as sns
 from tqdm import tqdm
 from collections import Counter, defaultdict
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def do_tsne(latents):
     tsne_ = TSNE(n_components=2, perplexity=30, n_jobs=-1, random_state=1968125571)
@@ -69,9 +70,9 @@ def get_split_latents(model, loader, dataloader):
     losses = defaultdict(list)
     
     for idxs, xs, ss, ts, rs in dataloader:
-        xs = xs.cuda()
-        ss = ss.cuda()
-        ts = ts.cuda()
+        xs = xs.to(device)
+        ss = ss.to(device)
+        ts = ts.to(device)
         x_dict = {'x': xs, 'S': ss-1, 'T': ts}
         x_dict, loss_dict = model.losses(x_dict, model.used_losses, loader=loader)
         for l_name, l_val in loss_dict.items():
@@ -367,8 +368,8 @@ class CustomLoader():
         self.tasks = data_dict["tasks"].numpy()
         self.runs = data_dict["runs"].clamp(min=1).numpy()  #temporary fix for ERN+LRP run labels
         
-        self.data_mean = data_dict['data_mean'].detach().clone().contiguous().cuda()
-        self.data_std = data_dict['data_std'].detach().clone().contiguous().cuda()
+        self.data_mean = data_dict['data_mean'].detach().clone().contiguous().to(device)
+        self.data_std = data_dict['data_std'].detach().clone().contiguous().to(device)
         
         dev_splits = [4, 7, 27, 33]
         test_splits = [5, 14, 15, 20, 22, 23, 26, 29]

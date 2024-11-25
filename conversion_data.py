@@ -19,14 +19,15 @@ args, unknown = parser.parse_known_args()
 
 
 if __name__ == '__main__':
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model_names = args.model_names.split(',')
     print("Loading data...")
     with torch.inference_mode():
         data_dict = torch.load(args.data_dir+f"simple_data.pt")
         data_dict["data"] = (data_dict["data"] - data_dict["data_mean"]) / data_dict["data_std"]
         test_loader = CustomLoader(data_dict, split='test')
-        data_mean = data_dict["data_mean"].detach().clone().contiguous().cuda()
-        data_std = data_dict["data_std"].detach().clone().contiguous().cuda()
+        data_mean = data_dict["data_mean"].detach().clone().contiguous().to(device)
+        data_std = data_dict["data_std"].detach().clone().contiguous().to(device)
         del data_dict
 
     unique_subjects = test_loader.unique_subjects
@@ -47,7 +48,7 @@ if __name__ == '__main__':
         wandb_id = model_name.split('-')[0]
         with wandb.init(project=args.wandb_project, id=wandb_id, resume='must') as run:
             state_dict = torch.load(args.data_dir + model_name + '.pt')
-            model = SplitLatentModel(30, 256, 64, 4, 4, recon_type='mse', content_cosine=1).cuda()
+            model = SplitLatentModel(30, 256, 64, 4, 4, recon_type='mse', content_cosine=1).to(device)
             model.load_state_dict(state_dict)
             model.eval()
             with torch.inference_mode():

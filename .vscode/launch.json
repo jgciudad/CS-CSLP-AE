@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debugpy: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "train_CSLP",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["--sub_contra_s_enabled", "1", "--task_contra_t_enabled", "1", "--restored_permute_s_enabled", "1", "--restored_permute_t_enabled", "1"]
+        },
+        {
+            "name": "create_sleep_dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["-e", "standard_config"]
+        },
+        {
+            "name": "create_sleepedfx",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["-e", "standard_config", "-d", "/Users/tlj258/cslp_sleepEDF", "-o", "/Users/tlj258/Code/CS-CSLP-AE"]
+        }
+    ]
+}

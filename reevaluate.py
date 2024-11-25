@@ -29,6 +29,8 @@ if __name__ == '__main__':
         test_loader = CustomLoader(data_dict, split='test')
         del data_dict
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     for run in tqdm(runs):
         SEED = run.config['seed']   
         torch.manual_seed(SEED)
@@ -52,7 +54,7 @@ if __name__ == '__main__':
         state_dict = torch.load(f"{args.model_save_dir}{run.id}-{run.name}.pt")
         model.load_state_dict(state_dict)
         data_out = {}
-        model = model.cuda()
+        model = model.to(device)
         model.eval()
         with torch.inference_mode(True):
             model.loader = loader

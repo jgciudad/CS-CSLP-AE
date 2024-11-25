@@ -135,6 +135,8 @@ if __name__ == '__main__':
     
     OLD_SCHED = bool(args.old_sched)
     
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
     model = SplitLatentModel(IN_CHANNELS, args.channels, args.latent_dim, NUM_LAYERS, KERNEL_SIZE, recon_type=args.recon_type, content_cosine=args.content_cosine)
     with torch.no_grad():
         data_dict = torch.load(args.data_dir+f"{args.data_line}_data.pt")
@@ -205,7 +207,7 @@ if __name__ == '__main__':
     numel = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Number of parameters: {numel}", file=sys.stdout, flush=True)
     
-    model = model.cuda()
+    model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     
     with torch.no_grad():
