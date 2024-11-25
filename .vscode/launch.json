@@ -19,7 +19,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--sub_contra_s_enabled", "1", "--task_contra_t_enabled", "1", "--restored_permute_s_enabled", "1", "--restored_permute_t_enabled", "1"]
+            "args": ["--sub_contra_s_enabled", "1", "--task_contra_t_enabled", "1", "--latent_permute_s_enabled", "1", "--latent_permute_t_enabled", "1"]
         },
         {
             "name": "create_sleep_dataset",
