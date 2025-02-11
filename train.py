@@ -324,6 +324,13 @@ if __name__ == '__main__':
                     if not OLD_SCHED:
                         scheduler.step(eval_results["XGB/eval/task/score"])
     
+    #%% Save model
+    
+    if args.save_model:
+        save_as = args.model_save_dir+f"{wandb.run.id}-{wandb.run.name}.pt"
+        torch.save(model.state_dict(), save_as)
+        print(f"Saved model to {save_as}", file=sys.stdout, flush=True)
+    
     #%%
     model.loader = test_loader
     model.eval()
@@ -437,8 +444,3 @@ if __name__ == '__main__':
     print('Uploading to wandb', file=sys.stdout, flush=True)
     wandb.log(figure_results)
     print('Done!', file=sys.stdout, flush=True)
-    
-    if args.save_model:
-        save_as = args.model_save_dir+f"{wandb.run.id}-{wandb.run.name}.pt"
-        torch.save(model.state_dict(), save_as)
-        print(f"Saved model to {save_as}", file=sys.stdout, flush=True)
