@@ -93,6 +93,8 @@ parser.add_argument('--conversion_N', type=int, default=2000)
 parser.add_argument('--extra_classifiers', type=int, default=1)
 parser.add_argument('--conversion_results', type=int, default=1)
 
+parser.add_argument('--wandb_mode', type=str, default='online')
+
 args, unknown = parser.parse_known_args()
 
 loss_to_notation = {
@@ -285,6 +287,7 @@ if __name__ == '__main__':
         group=group,
         name=f'{loss_tags}-{args.add_name}-{np.random.randint(0, 1000):03d}' if len(args.add_name) > 0 else f'{loss_tags}-{np.random.randint(0, 1000):03d}',
         tags=["split-model", "simple", loss_tags] + model.used_losses + extra_tags,
+        mode=args.wandb_mode
     )
     
     wandb.run.log_code(include_fn=lambda path: path.endswith("train.py") or path.endswith("split_model.py") or path.endswith("utils.py"))
