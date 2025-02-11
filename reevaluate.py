@@ -51,7 +51,7 @@ if __name__ == '__main__':
             losses=losses,
             loader=loader,
         )
-        state_dict = torch.load(f"{args.model_save_dir}{run.id}-{run.name}.pt")
+        state_dict = torch.load(f"{args.model_save_dir}{run.id}-{run.name}.pt", map_location=device)
         model.load_state_dict(state_dict)
         data_out = {}
         model = model.to(device)
