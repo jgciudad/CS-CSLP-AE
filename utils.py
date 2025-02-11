@@ -131,7 +131,7 @@ class XGBWrapper:
 
 
 def fit_clf_fn(X, y):
-    clf = XGBWrapper(xgb.XGBClassifier(n_estimators=300, max_bin=100, learning_rate=0.3, grow_policy='depthwise', objective='multi:softmax', tree_method='gpu_hist', n_jobs=-1))
+    clf = XGBWrapper(xgb.XGBClassifier(n_estimators=300, max_bin=100, learning_rate=0.3, grow_policy='depthwise', objective='multi:softmax', device=device, n_jobs=-1))
     clf.fit(X, y)
     return clf
 
