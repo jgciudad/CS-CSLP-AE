@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 
 import argparse
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', type=str, default='./')
@@ -376,7 +377,10 @@ if __name__ == '__main__':
     
     #%%
     print('Running TSNE...', file=sys.stdout, flush=True)
+    start_time = time.time()
     subject_tsne, task_tsne = split_do_tsne(subject_latents, task_latents)
+    end_time = time.time()
+    print(f"Time taken to run split_do_tsne: {end_time - start_time} seconds", file=sys.stdout, flush=True)
     #%%
     print('Plotting TSNE...', file=sys.stdout, flush=True)
     fig, ax = plt.subplots(2, 2, figsize=(20, 20))
