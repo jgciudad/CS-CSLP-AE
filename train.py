@@ -352,7 +352,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         x = model.get_x_hat({})
     #%%
-    print('Plotting training reconstructions...', file=sys.stdout, flush=True)
+    print('Plotting test reconstructions...', file=sys.stdout, flush=True)
     fig, axs = plt.subplots(5, 4, figsize=(20, 15))
     for i in range(4):
         for j in range(5):
@@ -373,8 +373,8 @@ if __name__ == '__main__':
     print('Plotting PCA...', file=sys.stdout, flush=True)
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     
-    plot_latents(fig, ax[0], subject_pca, subjects, tasks, test_loader, which='subject')
-    plot_latents(fig, ax[1], task_pca, subjects, tasks, test_loader, which='task')
+    plot_latents(fig, ax[0], subject_pca, test_loader, which='subject')
+    plot_latents(fig, ax[1], task_pca, test_loader, which='task')
     ax[0].set_title('Subject PCA')
     ax[1].set_title('Task PCA')
     ax[1].legend()
@@ -391,16 +391,16 @@ if __name__ == '__main__':
     #%%
     print('Plotting TSNE...', file=sys.stdout, flush=True)
     fig, ax = plt.subplots(2, 2, figsize=(20, 20))
-    plot_latents(fig, ax[0, 0], subject_tsne, subjects, tasks, which='subject')
+    plot_latents(fig, ax[0, 0], subject_tsne, test_loader, which='subject')
     ax[0, 0].set_title('TSNE: Subject latent colored by subject')
     ax[0, 0].legend()
-    plot_latents(fig, ax[1, 0], task_tsne, subjects, tasks, which='task')
+    plot_latents(fig, ax[1, 0], task_tsne, test_loader, which='task')
     ax[1, 0].set_title('TSNE: Task latent colored by task')
     ax[1, 0].legend()
-    plot_latents(fig, ax[0, 1], subject_tsne, subjects, tasks, which='task')
+    plot_latents(fig, ax[0, 1], subject_tsne, test_loader, which='task')
     ax[0, 1].set_title('TSNE: Subject latent colored by task')
     ax[0, 1].legend()
-    plot_latents(fig, ax[1, 1], task_tsne, subjects, tasks, which='subject')
+    plot_latents(fig, ax[1, 1], task_tsne, test_loader, which='subject')
     ax[1, 1].set_title('TSNE: Task latent colored by subject')
     ax[1, 1].legend()
     plt.tight_layout()
@@ -428,7 +428,7 @@ if __name__ == '__main__':
             display_labels = [f'{test_loader.task_to_label[t].split("/")[0]}' for t in test_loader.unique_tasks[::2]]
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                         display_labels=display_labels)
-        disp.plot(ax=ax[i], xticks_rotation='vertical', cmap='Blues', values_format='.2f', text_kw={'fontsize': 7} if which == 'task' else None)
+        disp.plot(ax=ax[i], xticks_rotation='vertical', cmap='Blues', values_format='.2f')
         disp.ax_.get_images()[0].set_clim(0, 1)
         if which == 'subject':
             acc = test_results['XGB/test/subject/balanced_accuracy']
