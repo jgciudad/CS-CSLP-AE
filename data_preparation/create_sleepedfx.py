@@ -11,6 +11,7 @@ import torch
 from scipy import signal
 from sklearn.model_selection import GroupKFold
 from tqdm import tqdm
+from mne.time_frequency import psd_array_multitaper
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,134 @@ class STFTTransform:
         return Zxx[:, 1:, :-1]
         # return Zxx[:, :, 1:]  # Remove DC component
 
+
+class MultitaperTransform:
+    """
+    MultitaperTransform: Short-time Fourier Transform
+
+    Attributes:
+        fs (int): sampling frequency.
+        segment_size (int): window length in samples.
+        step_size (int): step size between successive windows in samples.
+        nfft (int): number of points for FFT.
+        transform_fn (Callable): partial function containing the STFT operation.
+    """
+
+    def __init__(self, fs: int, *args, **kwargs) -> None:
+        """
+        Args:
+            fs (int): sampling frequency.
+            segment_size (int): window length in samples.
+            step_size (int): step size between successive windows in samples.
+            nfft (int): number of points for FFT.
+        """
+        self.fs = fs
+        self.transform_fn = partial(
+            psd_array_multitaper,
+            sfreq=self.fs,
+            fmin=0.3,
+            normalization='full',
+            verbose=0
+        )
+
+    def __call__(self, X: np.ndarray, annotations: Optional[np.ndarray] = None) -> np.ndarray:
+        psd, freqs = self.transform_fn(X)
+        # Zxx = np.abs(self.transform_fn(X)) ** 2
+        
+        psd = psd[:, ::4]
+        freqs = freqs[::4]
+        
+        Zxx = librosa.power_to_db(psd)
+        
+        Zxx = Zxx[:,:2**3*(Zxx.shape[1]//2**3)]
+        freqs = freqs[:2**3*(Zxx.shape[1]//2**3)]
+        
+        return Zxx, freqs
+
+
+class MultitaperTransform2:
+    """
+    MultitaperTransform: Short-time Fourier Transform
+
+    Attributes:
+        fs (int): sampling frequency.
+        segment_size (int): window length in samples.
+        step_size (int): step size between successive windows in samples.
+        nfft (int): number of points for FFT.
+        transform_fn (Callable): partial function containing the STFT operation.
+    """
+
+    def __init__(self, fs: int, *args, **kwargs) -> None:
+        """
+        Args:
+            fs (int): sampling frequency.
+            segment_size (int): window length in samples.
+            step_size (int): step size between successive windows in samples.
+            nfft (int): number of points for FFT.
+        """
+        self.fs = fs
+        self.transform_fn = partial(
+            psd_array_multitaper,
+            sfreq=self.fs,
+            fmin=0.3,
+            normalization='full',
+            verbose=0
+        )
+
+    def __call__(self, X: np.ndarray, annotations: Optional[np.ndarray] = None) -> np.ndarray:
+        psd, freqs = self.transform_fn(X)
+        # Zxx = np.abs(self.transform_fn(X)) ** 2
+        
+        psd = psd[:, ::7]
+        freqs = freqs[::7]
+        
+        Zxx = librosa.power_to_db(psd)
+        
+        Zxx = Zxx[:,:200]
+        freqs = freqs[:200]
+        
+        return Zxx, freqs
+    
+class WelchTransform:
+    """
+    MultitaperTransform: Short-time Fourier Transform
+
+    Attributes:
+        fs (int): sampling frequency.
+        segment_size (int): window length in samples.
+        step_size (int): step size between successive windows in samples.
+        nfft (int): number of points for FFT.
+        transform_fn (Callable): partial function containing the STFT operation.
+    """
+
+    def __init__(self, fs: int, segment_size: int, step_size: int, nfft: int, *args, **kwargs) -> None:
+        """
+        Args:
+            fs (int): sampling frequency.
+            segment_size (int): window length in samples.
+            step_size (int): step size between successive windows in samples.
+            nfft (int): number of points for FFT.
+        """
+        self.fs = fs
+        self.segment_size = segment_size
+        self.step_size = step_size
+        self.nfft = nfft
+        self.transform_fn = partial(
+            signal.welch,
+            fs=self.fs,
+            nperseg=self.segment_size,
+            noverlap=self.segment_size - self.step_size,
+            nfft=self.nfft,
+        )
+
+    def __call__(self, X: np.ndarray, annotations: Optional[np.ndarray] = None) -> np.ndarray:
+        f, Pxx = self.transform_fn(X)
+        
+        Zxx = librosa.power_to_db(Pxx)
+        
+        return Zxx[:, np.newaxis, 1:]
+    
+        
 def process_sleepedfx_data(args):
     N_SUBJECTS = args.subjects
     SAMPLING_RATE = args.fs
@@ -135,9 +264,17 @@ def process_sleepedfx_data(args):
         mu = epochs.pick(EEG_PICK).get_data().mean()
         std = epochs.pick(EEG_PICK).get_data().std()
         X = (epochs.pick(EEG_PICK).get_data() - mu) / std
-        Zxx = STFTTransform(fs=SAMPLING_RATE, segment_size=2 * SAMPLING_RATE, step_size=STEP_SIZE, nfft=NFFT)(X.squeeze())[
-            :, : SAMPLING_RATE // 2, :
-        ]
+        
+        if args.transform == 'stft':
+            Zxx = STFTTransform(fs=SAMPLING_RATE, segment_size=2 * SAMPLING_RATE, step_size=STEP_SIZE, nfft=NFFT)(X.squeeze())
+            Zxx = Zxx[:, : Zxx.shape[1] // 2, :]
+        elif args.transform == 'multitaper':
+            transform = MultitaperTransform(fs=SAMPLING_RATE)
+            Zxx, freqs = transform(X.squeeze())
+        elif args.transform == 'welch':
+            transform = WelchTransform(fs=SAMPLING_RATE, segment_size=2 * SAMPLING_RATE, step_size=STEP_SIZE, nfft=NFFT)
+            Zxx = transform(X.squeeze())
+ 
         Zxx = (Zxx - Zxx.mean()) / Zxx.std()
         if Zxx_array is None:
             Zxx_array = Zxx
@@ -145,7 +282,7 @@ def process_sleepedfx_data(args):
             Zxx_array = np.concatenate((Zxx_array, Zxx), axis=0)
 
         # Save metadata
-        N, F, T = Zxx.shape
+        N = Zxx.shape[0]
         subjects.extend([int(edf_path.stem[3:5])] * N)
         nights.extend([int(edf_path.stem[5:6])] * N)
         tasks.extend(epochs.events[:, -1].tolist())
@@ -169,7 +306,7 @@ def process_sleepedfx_data(args):
             labels=torch.tensor(tasks),
             fold_info=fold_info,
         ),
-        OUTPUT_DIR / "sleepedfx_data.pt",
+        OUTPUT_DIR / f"sleepedfx_{args.transform}_data.pt",
     )
 
 if __name__ == "__main__":
@@ -177,6 +314,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SleepEDFx data processing")
     parser.add_argument('-d', '--data', type=str, help='Data directory path')
     parser.add_argument('-o', '--output', type=str, help='Output file path')
+    parser.add_argument('--transform', type=str, help='stft or multitaper')
     parser.add_argument('-n', '--subjects', type=int, default=83, help='Number of subjects to process')
     parser.add_argument('--fs', type=int, default=128, help='Sampling frequency')
     parser.add_argument('--pick', type=str, default='Fpz-Cz', choices=['Fpz-Cz', 'Pz-Oz'], help='Channel to pick')
