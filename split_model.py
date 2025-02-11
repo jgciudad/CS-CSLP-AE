@@ -441,8 +441,8 @@ class BaselineModel(nn.Module):
 
 class SplitLatentModel(BaselineModel):
     
-    def __init__(self, in_channels, channels, latent_dim, num_layers, kernel_size, recon_type=True, content_cosine=False):
-        super(SplitLatentModel, self).__init__(in_channels, channels, latent_dim, num_layers, kernel_size, recon_type, content_cosine)
+    def __init__(self, in_channels, channels, latent_dim, num_layers, kernel_size, time_resolution=256, recon_type=True, content_cosine=False):
+        super(SplitLatentModel, self).__init__(in_channels, channels, latent_dim, num_layers, kernel_size, recon_type, content_cosine, time_resolution)
         
         self.encoder_out_net = ConvBlock(channels, channels, channels)
         

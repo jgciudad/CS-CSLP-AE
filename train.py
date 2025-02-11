@@ -21,6 +21,7 @@ parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=200)
 parser.add_argument('--lr', type=float, default=0.0001)
 
+parser.add_argument('--time_resolution', type=int, default=256) # 160 kornum, 240 SleepEDFx (ideally 200, need to regenerate it)
 parser.add_argument('--channels', type=int, default=256)
 parser.add_argument('--num_layers', type=int, default=4)
 parser.add_argument('--latent_dim', type=int, default=64)
@@ -139,7 +140,7 @@ if __name__ == '__main__':
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    model = SplitLatentModel(IN_CHANNELS, args.channels, args.latent_dim, NUM_LAYERS, KERNEL_SIZE, recon_type=args.recon_type, content_cosine=args.content_cosine)
+    model = SplitLatentModel(IN_CHANNELS, args.channels, args.latent_dim, NUM_LAYERS, KERNEL_SIZE, recon_type=args.recon_type, content_cosine=args.content_cosine, time_resolution=args.time_resolution)
     with torch.no_grad():
         data_dict = torch.load(args.data_dir+f"{args.data_line}_data.pt")
         data_dict["data"] = (data_dict["data"] - data_dict["data_mean"]) / data_dict["data_std"]
@@ -270,6 +271,7 @@ if __name__ == '__main__':
         "loss_tags": loss_tags,
         "eval_every": args.eval_every,
         "conversion_N": args.conversion_N,
+        "time_resolution": args.time_resolution
     }
     for l in model.used_losses:
         wandb_config[f"{l}_weight"] = model.loss_weights[l]
