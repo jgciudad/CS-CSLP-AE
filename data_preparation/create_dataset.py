@@ -3,7 +3,7 @@ mne.set_log_level('critical')
 import pandas as pd
 import numpy as np
 from collections import defaultdict
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 import torch
 
 
