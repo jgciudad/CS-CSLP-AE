@@ -7,6 +7,7 @@ from utils import get_results, get_split_latents, split_do_tsne, CustomLoader
 from tqdm import tqdm
 
 import argparse
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--ids', type=str, default='')
@@ -61,14 +62,20 @@ if __name__ == '__main__':
             print(f'Getting train latents {run.name}', file=sys.stdout, flush=True)
             subject_latents, task_latents, subjects, tasks, runs, losses = get_split_latents(model, loader, loader.get_dataloader(batch_size=model.batch_size, random_sample=False))
             print(f'Getting train tsne {run.name}', file=sys.stdout, flush=True)
+            start_time = time.time()
             subject_tsne, task_tsne = split_do_tsne(subject_latents, task_latents)
+            end_time = time.time()
+            print(f"Time taken to run train tsne: {end_time - start_time} seconds", file=sys.stdout, flush=True)
             data_out['subject_tsne'] = subject_tsne
             data_out['task_tsne'] = task_tsne
             model.loader = test_loader
             print(f'Getting test latents {run.name}', file=sys.stdout, flush=True)
             subject_latents, task_latents, subjects, tasks, runs, losses = get_split_latents(model, test_loader, test_loader.get_dataloader(batch_size=model.batch_size, random_sample=False))
             print(f'Getting test tsne {run.name}', file=sys.stdout, flush=True)
+            start_time = time.time()
             subject_tsne, task_tsne = split_do_tsne(subject_latents, task_latents)
+            end_time = time.time()
+            print(f"Time taken to run test tsne: {end_time - start_time} seconds", file=sys.stdout, flush=True)
             data_out['subject_tsne_test'] = subject_tsne
             data_out['task_tsne_test'] = task_tsne
             print(f'Getting test results {run.name}', file=sys.stdout, flush=True)
