@@ -1,0 +1,8 @@
+dirs:
+  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
+  new_data_filename: 'sleepedf.h5'
+  results_path: '/home/s202283/code/CS-CSLP-AE/results'
+
+data:
+  datasets: ['sleepedf']
+  

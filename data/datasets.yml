@@ -1,0 +1,11 @@
+kornum:
+  data_path: '/scratch/s202283/data/EEGdata_cleaned'
+  preprocessor: data.kornum:KornumPreprocessor
+
+sleepedf:
+  data_path: '/scratch/s202283/data/CSLP_sleepedfx'
+  preprocessor: data.sleepedf:SleepedfPreprocessor
+  channels: 
+    EEG1: 'Fpz-Cz'
+    EEG2: 'Pz-Oz'
+    EMG: 'submental'

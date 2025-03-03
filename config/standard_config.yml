@@ -1,0 +1,61 @@
+general:
+  device: 'cuda'
+
+dirs:
+  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
+  new_data_filename: 'all_data.h5'
+  save_results_path: ''
+
+data:
+  datasets: ['sleepedf', 'kornum']
+  channels: ['EEG1'] #, 'EEG2', 'EMG']
+  sampling_rate: 100 # Hz
+  epoch_length: 4 # seconds
+  emg_modality: 'rms' # 'raw' or 'average_rms'
+  stages: # only the stages specified here will be loaded. Needs to be specified always that a subset of ['data']['species'] is selected.
+    mouse:
+      WAKE: 0
+      NREM: 1
+      REM: 2
+      ARTIFACT: 3
+    human:
+      WAKE: 4
+      N1: 5
+      N2: 6
+      N3: 7
+      REM: 8
+      ARTIFACT: 9
+  preprocessing:
+    method: 'welch' # 'welch' or 'multitaper'
+    relative_psd: True
+    preprocessing_params:
+      nperseg: 200
+      noverlap: 185
+      nfft: 256
+    eeg_bandpass: 0.5 # Hz
+    emg_bandpass: [0.5, 30] # Hz
+    
+model:
+  hidden_dimensions: 1000 # dimensions in the latent space
+  F1: 8 # number of temporal filters
+  F2: 16 # number of pointwise filters
+  D: 2 # number of spatial filters
+  kernel_1: 64 # kernel size in first Conv2D (temporal filter)
+  kernel_2: 16 # kernel size in separable Conv2D 
+  dropout: 0.25
+  lr: 0.0001
+  beta: 1.0
+
+training:
+  epochs: 200
+  early_stopping: False
+  early_stopping_patience: 4 # number of epochs
+  val_check_interval: 0.5 # evaluation is performed every val_check_interval epochs
+  wandb_project: 'EEG2Vec'
+  samples_per_stage: 3
+  validation_classifier: False
+
+testing:
+  plot_at_testing: False # whether plotting the latent space right after testing
+  n_subset: 15000
+  n_components: 2

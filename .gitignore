@@ -1,0 +1,6 @@
+slurm_outputs/
+wandb/
+__pycache__/
+*.pt
+results/
+
