@@ -21,11 +21,12 @@ parser.add_argument('--model_save_dir', type=str, default='./')
 parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=200)
 parser.add_argument('--lr', type=float, default=0.0001)
+parser.add_argument('--fold', type=int, default=0)
 
 parser.add_argument('--time_resolution', type=int, default=256)
 parser.add_argument('--sampling_rate', type=int, default=100)
-parser.add_argument('--in_channels', type=int, default=256)
-parser.add_argument('--channels', type=int, default=256)
+parser.add_argument('--in_channels', type=int, default=256) # input channels
+parser.add_argument('--channels', type=int, default=256) # number of filters in conv layers
 parser.add_argument('--num_layers', type=int, default=4)
 parser.add_argument('--latent_dim', type=int, default=64)
 parser.add_argument('--recon_type', type=str, default='mse')
@@ -135,7 +136,7 @@ if __name__ == '__main__':
         np.random.seed(SEED)
     IN_CHANNELS = args.in_channels
     NUM_LAYERS = args.num_layers
-    KERNEL_SIZE = 4
+    KERNEL_SIZE = 4 # kernel size in strided convolutional blocks
     
     USE_TQDM = args.use_tqdm
     
@@ -341,14 +342,17 @@ if __name__ == '__main__':
     test_results = get_results(subject_latents, task_latents, subjects, tasks, split=test_loader.split, off_class_accuracy=args.full_eval)
     wandb.log(test_results)
     if args.conversion_results:
-        mse_results = get_full_conversion_results(model, test_loader, subject_latents, task_latents, args.conversion_N)
+        figure_results, mse_results = get_full_conversion_results(model, test_loader, subject_latents, task_latents, args.conversion_N, True)
         wandb.log(mse_results)
     if args.extra_classifiers:
         test_knn_results = get_results(subject_latents, task_latents, subjects, tasks, clf='KNN', fit_clf=fit_knn_fn, split=test_loader.split)
         wandb.log(test_knn_results)
         test_etc_results = get_results(subject_latents, task_latents, subjects, tasks, clf='ETC', fit_clf=fit_etc_fn, split=test_loader.split)
         wandb.log(test_etc_results)
-    figure_results = {}
+    
+    if 'figure_results' not in locals():
+        figure_results = {}
+
     #%%
     print('Reconstructing...', file=sys.stdout, flush=True)
     with torch.no_grad():
@@ -416,9 +420,9 @@ if __name__ == '__main__':
     print('Plotting confusion matrix...', file=sys.stdout, flush=True)
     subject_cm = test_results['XGB/' + test_loader.split + '/' + 'subject/cm']
     task_cm = test_results['XGB/' + test_loader.split + '/' + 'task/cm']
-    fig, axs = plt.subplots(1, 3, figsize=(30, 10))
+    fig, axs = plt.subplots(1, 2, figsize=(20, 10))
     ax = axs.flatten()
-    for i, which in enumerate(['subject', 'task', 'paradigm']):
+    for i, which in enumerate(['subject', 'task']):
         display_labels = []
         if which == 'subject':
             cm = subject_cm / subject_cm.sum(axis=1, keepdims=True)

@@ -491,8 +491,8 @@ def plot_spectrogram(ax, spectrogram, fs=128, time_length=30, title='Spectrogram
         cbar.set_label('Power (dB)')
     ax.grid(False)
     
-def plot_psd(ax, psd, fs=128, title='PSD'):
-    ax.plot(psd)
+def plot_psd(ax, psd, fs=128, title='PSD', label=None):
+    ax.plot(psd, label=label)
     ax.set_xlabel('Frequency (Hz)')
     ax.set_ylabel('Power (dB)')
     ax.set_title(title)

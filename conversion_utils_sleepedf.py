@@ -2,6 +2,9 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 from collections import defaultdict
+from matplotlib import pyplot as plt
+
+from utils_sleepedfx import plot_psd, plot_spectrogram
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -83,7 +86,7 @@ def get_reconstructed_erps(model, loader, subject_latents, task_latents, t_spec,
     return reconstructed_erp1
 
 @torch.inference_mode(True)
-def get_conversion_results(model, loader, subject_latents, task_latents, target_subject, target_task, channel, n):
+def get_conversion_results(model, loader, subject_latents, task_latents, target_subject, target_task, channel, n, axes=None, plot_fcn=None):
     real_erp1 = loader.data[(loader.subjects == target_subject) & (loader.tasks == target_task)]
     real_erp1 = real_erp1.to(device) * loader.data_std + loader.data_mean
     real_erp1 = real_erp1.mean(0)
@@ -97,11 +100,29 @@ def get_conversion_results(model, loader, subject_latents, task_latents, target_
     ds_mse = F.mse_loss(recon_erp_ds1[channel], real_erp1[channel]) if recon_erp_ds1 is not None else None
     dd_mse = F.mse_loss(recon_erp_dd1[channel], real_erp1[channel]) if recon_erp_dd1 is not None else None
 
+    if axes is not None:
+        if plot_fcn.__name__ == 'plot_psd':
+            plot_fcn(axes[0, target_task-1], real_erp1[channel].cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[0, len(loader.unique_tasks) + target_task-1], real_erp1[channel].cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[1, target_task-1], real_erp1[channel].cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[1, len(loader.unique_tasks) + target_task-1], real_erp1[channel].cpu().numpy(), label='Real', fs=100)
+
+            if recon_erp_ss1 is not None: 
+                plot_fcn(axes[0, target_task-1], recon_erp_ss1[channel].cpu().numpy(), title=loader.task_to_label[target_task], label='Trans.', fs=100)
+            if recon_erp_sd1 is not None:
+                plot_fcn(axes[0, len(loader.unique_tasks) + target_task-1], recon_erp_sd1[channel].cpu().numpy(), title=loader.task_to_label[target_task], label='Trans.', fs=100)
+            if recon_erp_ds1 is not None:
+                plot_fcn(axes[1, target_task-1], recon_erp_ds1[channel].cpu().numpy(), title=loader.task_to_label[target_task], label='Trans.', fs=100)
+            if recon_erp_dd1 is not None:
+                plot_fcn(axes[1, len(loader.unique_tasks) + target_task-1], recon_erp_dd1[channel].cpu().numpy(), title=loader.task_to_label[target_task], label='Trans.', fs=100)
+        elif plot_fcn.__name__ == 'plot_spectrogram':
+            raise NotImplementedError('Spectrogram transformation plotting is not implemented yet.')
+            
     return ss_mse, sd_mse, ds_mse, dd_mse
 
 
 @torch.inference_mode(True)
-def get_full_conversion_results(model, test_loader, subject_latents, task_latents, N):
+def get_full_conversion_results(model, test_loader, subject_latents, task_latents, N, plot, figure_results={}):
     channel_names = [
         'Fpz-Cz']
     channel_to_idx = {c: i for i, c in enumerate(channel_names)}
@@ -109,9 +130,20 @@ def get_full_conversion_results(model, test_loader, subject_latents, task_latent
     ss_mses, sd_mses, ds_mses, dd_mses = [], [], [], []
     mse_results = {}
     for target_subject in test_loader.unique_subjects:
+        
+        if plot is True:
+            input_type = 'psd' if test_loader.data.shape[1] == 1 else 'spectrogram'
+            
+            if input_type == 'psd':
+                fig, axes = plt.subplots(2, 2*len(test_loader.unique_tasks), figsize=(10*len(test_loader.unique_tasks), 10))
+                plot_fcn = plot_psd
+            elif input_type == 'spectrogram':
+                fig, axes = plt.subplots(4, 2*len(test_loader.unique_tasks), figsize=(10,len(test_loader.unique_tasks), 10))
+                plot_fcn = plot_spectrogram
+            
         for target_task in test_loader.unique_tasks:
             channel = channel_to_idx[task_to_channel[target_task]]
-            ss_mse, sd_mse, ds_mse, dd_mse = get_conversion_results(model, test_loader, subject_latents, task_latents, target_subject, target_task, channel, N)
+            ss_mse, sd_mse, ds_mse, dd_mse = get_conversion_results(model, test_loader, subject_latents, task_latents, target_subject, target_task, channel, N, axes, plot_fcn)
             paradigm_name = test_loader.task_to_label[target_task]
             mse_results[f'MSE/test/{paradigm_name}/{target_subject}/ss'] = ss_mse
             mse_results[f'MSE/test/{paradigm_name}/{target_subject}/sd'] = sd_mse
@@ -121,6 +153,17 @@ def get_full_conversion_results(model, test_loader, subject_latents, task_latent
             sd_mses.append(sd_mse)
             ds_mses.append(ds_mse)
             dd_mses.append(dd_mse)
+        
+        if plot is True:
+            # Add higher-level titles for grouped subplots
+            axes[0,0].legend()
+            fig.text(0.25, axes[0,0].get_position().y1 + 0.05, "(S.s, S.t)", fontsize=14, ha='center', fontweight='bold')
+            fig.text(0.75, axes[0,0].get_position().y1 + 0.05, "(S.s, D.t)", fontsize=14, ha='center', fontweight='bold')
+            fig.text(0.25, axes[1,0].get_position().y1 + 0.05, "(D.s, S.t)", fontsize=14, ha='center', fontweight='bold')
+            fig.text(0.75, axes[1,0].get_position().y1 + 0.05, "(D.s, D.t)", fontsize=14, ha='center', fontweight='bold')
+
+            figure_results[f'transforms/{target_subject}'] = fig
+        
     #Calculate per subject mean
     for target_subject in test_loader.unique_subjects:
         ss_results, sd_results, ds_results, dd_results = [], [], [], []
@@ -171,4 +214,4 @@ def get_full_conversion_results(model, test_loader, subject_latents, task_latent
     mse_results['MSE/test/mean/ds'] = torch.mean(torch.stack(ds_mses))
     mse_results['MSE/test/mean/dd'] = torch.mean(torch.stack(dd_mses))
     
-    return mse_results
+    return figure_results, mse_results
