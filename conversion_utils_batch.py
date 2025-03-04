@@ -86,7 +86,7 @@ def get_reconstructed_erps(model, loader, subject_latents, task_latents, t_spec,
     
     if convert_task_latents.shape[0] != 0 and convert_subject_latents.shape[0] != 0:
         reconstructions = reconstruct(model, convert_subject_latents, convert_task_latents)
-        # reconstructions = reconstructions*loader.data_std + loader.data_mean
+        # reconstructions = reconstructions*loader.data_std + loader.data_mean # TODO: fix standardization after transformation
         reconstructed_erp1 = reconstructions.mean(0)
     else:
         reconstructed_erp1 = None
@@ -98,7 +98,7 @@ def get_conversion_results(model, loader, subject_latents, task_latents, target_
     rows = loader.table.get_where_list('({}=={}) & ({}=={})'.format(COLUMN_SUBJECT_ID, target_subject, COLUMN_LABEL, target_task)).tolist()
     
     real_erp1 = loader.table[rows][channel]
-    real_erp1 = real_erp1.copy()
+    # real_erp1 = real_erp1.copy()
     real_erp1 = torch.from_numpy(real_erp1).to(device)
     # real_erp1 = real_erp1.to(device) * loader.data_std + loader.data_mean TODO: fix standardization after transformation
     real_erp1 = real_erp1.mean(0)
@@ -107,17 +107,17 @@ def get_conversion_results(model, loader, subject_latents, task_latents, target_
     recon_erp_ds1 = get_reconstructed_erps(model, loader, subject_latents, task_latents, 'different', 'same', target_subject, target_task, n)
     recon_erp_dd1 = get_reconstructed_erps(model, loader, subject_latents, task_latents, 'different', 'different', target_subject, target_task, n)
     
-    ss_mse = F.mse_loss(recon_erp_ss1[channel_idx], real_erp1[channel_idx]) if recon_erp_ss1 is not None else None
-    sd_mse = F.mse_loss(recon_erp_sd1[channel_idx], real_erp1[channel_idx]) if recon_erp_sd1 is not None else None
-    ds_mse = F.mse_loss(recon_erp_ds1[channel_idx], real_erp1[channel_idx]) if recon_erp_ds1 is not None else None
-    dd_mse = F.mse_loss(recon_erp_dd1[channel_idx], real_erp1[channel_idx]) if recon_erp_dd1 is not None else None
+    ss_mse = F.mse_loss(recon_erp_ss1[channel_idx], real_erp1.squeeze()) if recon_erp_ss1 is not None else None
+    sd_mse = F.mse_loss(recon_erp_sd1[channel_idx], real_erp1.squeeze()) if recon_erp_sd1 is not None else None
+    ds_mse = F.mse_loss(recon_erp_ds1[channel_idx], real_erp1.squeeze()) if recon_erp_ds1 is not None else None
+    dd_mse = F.mse_loss(recon_erp_dd1[channel_idx], real_erp1.squeeze()) if recon_erp_dd1 is not None else None
 
     if axes is not None:
         if plot_fcn.__name__ == 'plot_psd':
-            plot_fcn(axes[0, target_task-1], real_erp1[channel_idx].cpu().numpy(), label='Real', fs=100)
-            plot_fcn(axes[0, len(loader.unique_tasks) + target_task-1], real_erp1[channel_idx].cpu().numpy(), label='Real', fs=100)
-            plot_fcn(axes[1, target_task-1], real_erp1[channel_idx].cpu().numpy(), label='Real', fs=100)
-            plot_fcn(axes[1, len(loader.unique_tasks) + target_task-1], real_erp1[channel_idx].cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[0, target_task-1], real_erp1.squeeze().cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[0, len(loader.unique_tasks) + target_task-1], real_erp1.squeeze().cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[1, target_task-1], real_erp1.squeeze().cpu().numpy(), label='Real', fs=100)
+            plot_fcn(axes[1, len(loader.unique_tasks) + target_task-1], real_erp1.squeeze().cpu().numpy(), label='Real', fs=100)
 
             if recon_erp_ss1 is not None: 
                 plot_fcn(axes[0, target_task-1], recon_erp_ss1[channel_idx].cpu().numpy(), title=loader.task_to_label[target_task], label='Trans.', fs=100)
@@ -141,7 +141,7 @@ def get_full_conversion_results(model, test_loader, subject_latents, task_latent
     for target_subject in test_loader.unique_subjects:
         
         if plot is True:
-            input_type = 'psd' if in_channels == 1 else 'spectrogram'
+            input_type = 'psd' # if in_channels == 1 else 'spectrogram' #sticking to PSD for now
             
             if input_type == 'psd':
                 fig, axes = plt.subplots(2, 2*len(test_loader.unique_tasks), figsize=(10*len(test_loader.unique_tasks), 10))
