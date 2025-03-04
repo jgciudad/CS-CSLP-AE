@@ -83,7 +83,7 @@ class ConfigLoader:
                 assert config["data"]["emg_rms_window"]
             except:
                 raise Exception(
-                    "if 'emg_modality'=='average_rms', 'emg_rms_window' needs to be specified."
+                    "if 'emg_modality'=='moving_rms', 'emg_rms_window' needs to be specified."
                 )
             self.EMG_RMS_WINDOW = config["data"]["emg_rms_window"]
         

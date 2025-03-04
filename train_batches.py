@@ -31,7 +31,6 @@ parser.add_argument('--lr', type=float, default=0.0001)
 
 parser.add_argument('--time_resolution', type=int, default=256)
 parser.add_argument('--sampling_rate', type=int, default=100)
-parser.add_argument('--in_channels', type=int, default=256) # input channels
 parser.add_argument('--channels', type=int, default=256) # number of filters in conv layers
 parser.add_argument('--num_layers', type=int, default=4)
 parser.add_argument('--latent_dim', type=int, default=64)
@@ -140,7 +139,6 @@ if __name__ == '__main__':
         SEED = 3242342323
         torch.manual_seed(SEED)
         np.random.seed(SEED)
-    IN_CHANNELS = args.in_channels
     NUM_LAYERS = args.num_layers
     KERNEL_SIZE = 4 # kernel size in strided convolutional blocks
     
@@ -158,7 +156,8 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     config = ConfigLoader(run_name=args.run_name, experiment=args.experiment)
-    
+    IN_CHANNELS = config.CHANNELS
+
     with tables.open_file(config.DATA_FILENAME, mode="r") as f:
         table = f.root.merged_datasets
         train_subjects = []
@@ -391,8 +390,8 @@ if __name__ == '__main__':
         fig, axs = plt.subplots(n_samples[0], n_samples[1], figsize=(20, 15))
         for i in range(n_samples[0] * n_samples[1]):
             mse_sample = torch.mean((x['x'][i] - x['x_hat'][i]) ** 2).item()
-            plot_psd(axs[i//n_samples[1], i%4], x['x'][i].squeeze().cpu().detach().numpy(), args.sampling_rate)
-            plot_psd(axs[i//n_samples[1], i%4], x['x_hat'][i].squeeze().cpu().detach().numpy(), args.sampling_rate, f"S{i}, MSE: {mse_sample:.4f}, Stage: {model.loader.task_to_label[x['T'][i].item()]}")
+            plot_psd(axs[i//n_samples[1], i%4], x['x'][i].squeeze().cpu().detach().numpy(), config.SAMPLING_RATE)
+            plot_psd(axs[i//n_samples[1], i%4], x['x_hat'][i].squeeze().cpu().detach().numpy(), config.SAMPLING_RATE, f"S{i}, MSE: {mse_sample:.4f}, Stage: {model.loader.task_to_label[x['T'][i].item()]}")
         plt.tight_layout()
         figure_results['results/recon'] = wandb.Image(fig)
         plt.close(fig)
