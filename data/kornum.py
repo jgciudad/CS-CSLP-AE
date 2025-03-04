@@ -141,7 +141,7 @@ class KornumPreprocessor(BasePreprocessor):
                 X_rms = np.sqrt(np.mean(reshaped_s**2, 1))
 
             elif c_name == "EMG":
-                if self.config.EMG_MODALITY == "average_rms":
+                if self.config.EMG_MODALITY == "rms":
                     X_rms = np.sqrt(np.mean(reshaped_s**2, 1))
 
             features[c_name+"_rms"] = X_rms

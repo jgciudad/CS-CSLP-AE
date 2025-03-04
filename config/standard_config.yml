@@ -11,7 +11,7 @@ data:
   channels: ['EEG1'] #, 'EEG2', 'EMG']
   sampling_rate: 100 # Hz
   epoch_length: 4 # seconds
-  emg_modality: 'rms' # 'raw' or 'average_rms'
+  emg_modality: 'rms' # 'raw' or 'rms'
   stages: # only the stages specified here will be loaded. Needs to be specified always that a subset of ['data']['species'] is selected.
     mouse:
       WAKE: 0

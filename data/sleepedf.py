@@ -117,7 +117,7 @@ class SleepedfPreprocessor(BasePreprocessor):
                 features[new_c_name] = X
                 
             else: 
-                if self.config.EMG_MODALITY == "average_rms":
+                if self.config.EMG_MODALITY == "rms":
                     X_rms = np.sqrt(np.mean(X**2, 1))
             
             features[new_c_name+"_rms"] = X_rms
