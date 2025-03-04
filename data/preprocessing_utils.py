@@ -78,7 +78,7 @@ class MultitaperPreprocessor:
             normalization=self.normalization,
         )
         
-        psd = librosa.power_to_db(psd)
+        # psd = librosa.power_to_db(psd)
 
         return psd[:, 1:], freqs, freqs[1:]
 
@@ -106,6 +106,6 @@ class WelchPreprocessor:
             nfft=self.nfft,
         )
         
-        psd = librosa.power_to_db(psd)
+        # psd = librosa.power_to_db(psd)
 
         return psd[:, np.newaxis, 1:], freqs[1:]
