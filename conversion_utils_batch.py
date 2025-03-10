@@ -68,8 +68,8 @@ def sample_latents(loader, subject_latents, task_latents, target_subject, target
 def reconstruct(model, convert_subject_latents, convert_task_latents, batch_size=2048):
     num_latents = convert_subject_latents.shape[0]
     num_batches = int(np.ceil(num_latents / batch_size))
-    convert_subject_latents = torch.unflatten(convert_subject_latents.to(device), 1, (model.latent_dim, model.latent_seqs))
-    convert_task_latents = torch.unflatten(convert_task_latents.to(device), 1, (model.latent_dim, model.latent_seqs))
+    convert_subject_latents = torch.unflatten(torch.tensor(convert_subject_latents, device=device), 1, (model.latent_dim, model.latent_seqs))
+    convert_task_latents = torch.unflatten(torch.tensor(convert_task_latents, device=device), 1, (model.latent_dim, model.latent_seqs))
     reconstructions = []
     for i in range(num_batches):
         start_idx = i * batch_size
