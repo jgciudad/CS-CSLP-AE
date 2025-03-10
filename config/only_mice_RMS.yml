@@ -1,6 +1,6 @@
 dirs:
   new_data_path: '/scratch/s202283/data/CSLP_kornum/'
-  new_data_filename: 'only_mice.h5'
+  new_data_filename: 'only_mice_RMS.h5'
   results_path: '/home/s202283/code/CS-CSLP-AE/results'
 
 data:
@@ -12,6 +12,4 @@ data:
       NREM: 1
       REM: 2
       ARTIFACT: 3
-  preprocessing:
-      relative_psd: False
   

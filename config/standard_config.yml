@@ -8,7 +8,7 @@ dirs:
 
 data:
   datasets: ['sleepedf', 'kornum']
-  channels: ['EEG1'] #, 'EEG2', 'EMG']
+  channels: ['EEG1', 'EEG2', 'EMG']
   sampling_rate: 100 # Hz
   epoch_length: 4 # seconds
   emg_modality: 'rms' # 'raw' or 'rms'
