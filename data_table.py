@@ -10,10 +10,10 @@ def create_table_description(config: dict):
     n_sample_values = int(128)
 
     table_description = {
-        COLUMN_SUBJECT_ID: tables.StringCol(10),
+        COLUMN_SUBJECT_ID: tables.StringCol(20),
         COLUMN_LABEL: tables.Int16Col(),
         COLUMN_SPECIES: tables.StringCol(10),
-        COLUMN_DATASET: tables.StringCol(10)
+        COLUMN_DATASET: tables.StringCol(20)
     }
     for c in config.CHANNELS:
         if 'EEG' in c:
