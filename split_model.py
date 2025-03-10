@@ -183,12 +183,12 @@ class BaselineModel(nn.Module):
         super(BaselineModel, self).__init__()
         self.time_resolution = time_resolution
         self.latent_seqs = time_resolution // (2**num_layers)
-        self.in_channels = in_channels
+        self.in_channels = len(in_channels)
         self.channels = channels
         self.latent_dim = latent_dim
         
         self.encoder_in = nn.Sequential(
-            ConvReLU(in_channels, channels),
+            ConvReLU(self.in_channels, channels),
             ConvBlock(channels, channels, channels),
         )
         
@@ -202,7 +202,7 @@ class BaselineModel(nn.Module):
         self.decoder_bottleneck = TransformerBottleneck(channels, num_layers, self.latent_seqs)
         self.decoder = TransposedConvolutionalDecoder(channels, kernel_size, num_layers)
         
-        self.decoder_out = ConvBlock(channels, channels, in_channels)
+        self.decoder_out = ConvBlock(channels, channels, self.in_channels)
         
         self.subj_logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.task_logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))

@@ -512,7 +512,7 @@ class CustomLoader():
         for i in self.split_indices:
             self.total_samples += 1
 
-            d = np.concatenate([self.table[i][c] for c in self.config.CHANNELS], axis=1)
+            d = np.concatenate([self.table[i][c] for c in self.config.CHANNELS], axis=0)
             s = self.table[i][COLUMN_SUBJECT_ID]
             s = self.unique_subjects.index(s)
             t = self.table[i][COLUMN_LABEL]
