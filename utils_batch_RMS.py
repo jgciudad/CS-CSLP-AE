@@ -357,7 +357,7 @@ class DelegatedLoader(IterableDataset):
 
 class CustomLoader():
     
-    def __init__(self, config, table, subjects: list, split):
+    def __init__(self, config, h5file, subjects: list, split):
         
         # TODO: standardization 
         
@@ -367,7 +367,7 @@ class CustomLoader():
         # self.data_mean = data_dict['data_mean'].detach().clone().contiguous().to(device)
         # self.data_std = data_dict['data_std'].detach().clone().contiguous().to(device)
                 
-        self.table = table
+        self.table = h5file.root.merged_datasets
         
         # with open(os.path.join(os.path.dirname(config.DATA_FILENAME), 'human_tasks.yaml'), 'r') as file:
         #     self.human_tasks = yaml.safe_load(file)
@@ -384,12 +384,13 @@ class CustomLoader():
         # self.unique_runs = list(range(1, 41))  # Assuming runs are numbered from 1 to 40
         self.task_to_label = {1: "WAKE", 2: "NREM", 3: "REM", 4: "ARTIFACT"}
         self.unique_tasks = [1, 2, 3, 4]
-
-        self.split_indices = self.get_split_indices() # rows that belong to self.unique_subjects
-
+        
+        self.split_indices = []
         self.subject_indices = {s: [] for s in range(len(self.unique_subjects))}
-        self.get_subject_indices()
         self.task_indices = {t: [] for t in self.unique_tasks}
+        self.full_indices = {s: {t: [] for t in self.unique_tasks} for s in range(len(self.unique_subjects))}
+        self.get_indices()
+                
         self.species = np.unique(self.table[self.split_indices][COLUMN_SPECIES]).astype(str)
         
         # self.run_indices = {r: [] for r in self.unique_runs}
@@ -411,39 +412,39 @@ class CustomLoader():
         #     self.task_indices[t].append(i)
         #     self.run_indices[r].append(i)
         #     self.full_indices[s][t].append(i)
-    
-    def get_split_indices(self):
-        indices = []
         
-        for s in self.unique_subjects:
-            s_indices = self.table.get_where_list('({}=={})'.format(COLUMN_SUBJECT_ID, s)).tolist()
-            indices.extend(s_indices)
-        indices.sort()
+    def get_indices(self):
         
-        return indices
-    
-    def get_subject_indices(self):        
         for s_idx, s in enumerate(self.unique_subjects):
-            self.subject_indices[s_idx] = self.table.get_where_list('({}=={})'.format(COLUMN_SUBJECT_ID, s)).tolist()
-    
-    def get_task_indices(self):
-        split_indices_set = set(self.split_indices)
+            # get the indices of the subject s
+            subject_condition = '({}=={})'.format(COLUMN_SUBJECT_ID, s)
+            s_indices = self.table.get_where_list(subject_condition).tolist()
+            
+            # create a binary mask 
+            s_mask = np.zeros(self.table.nrows, dtype=bool)
+            s_mask[s_indices] = True
+            
+            for t in self.unique_tasks:            
+                t_mask = self.labels_array == t
+                
+                # intersection of subject and task indices
+                full_indices = np.where(s_mask & t_mask)[0].tolist()
+                    
+                # update all lists
+                self.subject_indices[s_idx].extend(full_indices)
+                self.task_indices[t].extend(full_indices)
+                self.full_indices[s_idx][t].extend(full_indices)
+                self.split_indices.extend(full_indices)
         
+        # sort all lists
+        for s_idx in range(len(self.unique_subjects)):
+            # sort all lists
+            self.subject_indices[s_idx].sort()
+            for t in self.unique_tasks:
+                self.full_indices[s_idx][t].sort()        
         for t in self.unique_tasks:
-            t_indices = self.table.get_where_list('({}=={})'.format(COLUMN_LABEL, t)).tolist()
-            
-            selected_indices = [idx for idx in t_indices if idx in split_indices_set]
-            
-            self.task_indices[t] = selected_indices
-            
-    def get_indices_debug(self):        
-        for s in self.unique_subjects:
-            s_idx = self.table.get_where_list('({}=={})'.format(COLUMN_SUBJECT_ID, s)).tolist()
-            self.subject_indices[s] = [idx for idx in s_idx if idx in self.random_indices]
-            
-        for t in self.unique_tasks:
-            t_idx = self.table.get_where_list('({}=={})'.format(COLUMN_LABEL, t)).tolist()
-            self.task_indices[t] = [idx for idx in t_idx if idx in self.random_indices]
+            self.task_indices[t].sort()
+        self.split_indices.sort()
     
     def reset_sample_counts(self):
         raise NotImplementedError("reset_sample_counts method is not adapted yet.")
@@ -456,9 +457,20 @@ class CustomLoader():
         return DataLoader(delegated_loader, batch_size=None, pin_memory=True)
     
     def sample_by_condition(self, subjects, tasks):
-        raise NotImplementedError("Sampling by condition has not been adapted yet.")
-    
-        # I might not need this function, leaving it just in case. 
+        samples = []
+        for s, t in zip(subjects, tasks):
+            i = np.random.choice(self.full_indices[s][t])
+            samples.append(i)
+        samples = np.array(samples)
+        self.total_samples += len(samples)
+        
+        d = np.concatenate([self.table[samples][c] for c in self.config.CHANNELS if c in ['EEG1', 'EEG2']], axis=1)
+        rms = np.concatenate([self.table[samples][c+"_rms"][..., np.newaxis] for c in self.config.CHANNELS], axis=1)
+
+        d = torch.tensor(d, dtype=torch.float32)
+        rms = torch.tensor(rms, dtype=torch.float32)
+        
+        return d, rms
     
     def sample_by_property(self, property):
         

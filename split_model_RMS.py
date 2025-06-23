@@ -682,14 +682,16 @@ class SplitLatentModel(BaselineModel):
                             Q_batch_size = self.batch_size
                         else:
                             Q_batch_size = self.batch_size // 4
-                        subjects1 = np.random.choice(self.loader.unique_subjects, Q_batch_size, replace=True)
-                        subjects2 = np.random.choice(self.loader.unique_subjects, Q_batch_size, replace=True)
+                        subjects1 = np.random.choice(np.arange(len(self.loader.unique_subjects)), Q_batch_size, replace=True)
+                        subjects2 = np.random.choice(np.arange(len(self.loader.unique_subjects)), Q_batch_size, replace=True)
                         tasks1 = np.random.choice(self.loader.unique_tasks, Q_batch_size, replace=True)
                         tasks2 = np.random.choice(self.loader.unique_tasks, Q_batch_size, replace=True)
                         all_subjects = np.concatenate([subjects1, subjects1, subjects2, subjects2])
                         all_tasks = np.concatenate([tasks1, tasks2, tasks1, tasks2])
-                        all_x = self.loader.sample_by_condition(all_subjects, all_tasks).to(device)
-                        all_s, all_t = self.subject_task_encode(all_x)
+                        all_x, all_rms= self.loader.sample_by_condition(all_subjects, all_tasks)
+                        all_x = all_x.to(device)
+                        all_rms = all_rms.to(device)
+                        all_s, all_t = self.subject_task_encode(all_x, all_rms)
                         s11, t11 = all_s[:Q_batch_size], all_t[:Q_batch_size]
                         s12, t12 = all_s[Q_batch_size:2*Q_batch_size], all_t[Q_batch_size:2*Q_batch_size]
                         s21, t21 = all_s[2*Q_batch_size:3*Q_batch_size], all_t[2*Q_batch_size:3*Q_batch_size]

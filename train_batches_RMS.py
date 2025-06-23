@@ -164,14 +164,15 @@ if __name__ == '__main__':
         
     config = ConfigLoader(run_name=args.run_name, fold=FOLD, experiment=args.experiment)
     IN_CHANNELS = config.CHANNELS
-
-    with tables.open_file(config.DATA_FILENAME, mode="r") as f:
-        table = f.root.merged_datasets
+    
+    with tables.open_file(config.DATA_FILENAME, mode="r") as pytables_file:
+        table = pytables_file.root.merged_datasets
         train_subjects = []
         validation_subjects = []
         test_subjects = []
+        
         for d in config.DATASETS:
-            dataset_subjects = np.unique(table[table.get_where_list(f'dataset == b"{d}"')]['subject_id'])
+            dataset_subjects = np.unique(table[table.get_where_list(f'dataset == {repr(d.encode("utf-8"))}')]['subject_id'])
             
             train_folds_d, val_folds_d, test_folds_d = create_folds(dataset_subjects, num_folds=args.n_folds, seed=42)
             
@@ -181,9 +182,9 @@ if __name__ == '__main__':
 
         model = SplitLatentModel(IN_CHANNELS, args.channels, args.latent_dim, NUM_LAYERS, KERNEL_SIZE, recon_type=args.recon_type, content_cosine=args.content_cosine, time_resolution=args.time_resolution)
         with torch.no_grad():
-            loader = CustomLoader(config, table, subjects=train_subjects, split='train')
-            eval_loader = CustomLoader(config, table, subjects=validation_subjects, split='eval')
-            test_loader = CustomLoader(config, table, subjects=test_subjects, split='test')
+            loader = CustomLoader(config, pytables_file, subjects=train_subjects, split='train')
+            eval_loader = CustomLoader(config, pytables_file, subjects=validation_subjects, split='eval')
+            test_loader = CustomLoader(config, pytables_file, subjects=test_subjects, split='test')
         
         all_losses = ["recon", "sub_contra_s", "task_contra_t", "latent_permute_s", "latent_permute_t", "restored_permute_s", "restored_permute_t", "sub_content", "task_content", "sub_cross_s", "task_cross_t", "scramble_permute", "conversion_permute", "quadruplet_permute", "quadruplet_permute_F"]
         losses = []
