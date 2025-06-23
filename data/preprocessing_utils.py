@@ -109,3 +109,41 @@ class WelchPreprocessor:
         # psd = librosa.power_to_db(psd)
 
         return psd[:, np.newaxis, 1:], freqs[1:]
+
+
+def create_folds(subjects, num_folds=5, val_ratio=0.15, test_ratio=0.15, seed=42):
+    rng = np.random.default_rng(seed)
+    subjects = np.array(subjects)
+    rng.shuffle(subjects)
+
+    n_subjects = len(subjects)
+    n_val = int(np.round(val_ratio * n_subjects))
+    n_test = int(np.round(test_ratio * n_subjects))
+
+    val_pool = set()
+    test_pool = set()
+
+    train_folds = []
+    val_folds = []
+    test_folds = []
+
+    for fold_idx in range(num_folds):
+        # Select validation subjects not already used in validation
+        available_for_val = [s for s in subjects if s not in val_pool]
+        val_subjects = rng.choice(available_for_val, size=min(n_val, len(available_for_val)), replace=False)
+        val_pool.update(val_subjects)
+
+        # Select test subjects not already used in test and not in this fold's val set
+        available_for_test = [s for s in subjects if s not in test_pool and s not in val_subjects]
+        test_subjects = rng.choice(available_for_test, size=min(n_test, len(available_for_test)), replace=False)
+        test_pool.update(test_subjects)
+
+        # Training = all others
+        train_subjects = [s for s in subjects if s not in val_subjects and s not in test_subjects]
+
+        # Store fold
+        train_folds.append(train_subjects)
+        val_folds.append(val_subjects.tolist())
+        test_folds.append(test_subjects.tolist())
+
+    return train_folds, val_folds, test_folds

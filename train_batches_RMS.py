@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 import tables
 import os
-from sklearn.model_selection import train_test_split
+from data.preprocessing_utils import create_folds
 
 
 import argparse
@@ -28,6 +28,8 @@ parser.add_argument('--run_name', type=str, default='timestamp')
 parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=200)
 parser.add_argument('--lr', type=float, default=0.0001)
+parser.add_argument('--fold', type=int, default=-1)
+parser.add_argument('--n_folds', type=int, default=4)
 
 parser.add_argument('--time_resolution', type=int, default=256)
 parser.add_argument('--sampling_rate', type=int, default=100)
@@ -154,8 +156,13 @@ if __name__ == '__main__':
         wandb_mode = 'online'
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    config = ConfigLoader(run_name=args.run_name, experiment=args.experiment)
+
+    if args.fold == -1:
+        FOLD = np.random.randint(0, args.n_folds)
+    else:
+        FOLD = args.fold
+        
+    config = ConfigLoader(run_name=args.run_name, fold=FOLD, experiment=args.experiment)
     IN_CHANNELS = config.CHANNELS
 
     with tables.open_file(config.DATA_FILENAME, mode="r") as f:
@@ -166,12 +173,11 @@ if __name__ == '__main__':
         for d in config.DATASETS:
             dataset_subjects = np.unique(table[table.get_where_list(f'dataset == b"{d}"')]['subject_id'])
             
-            train_ids, test_ids = train_test_split(dataset_subjects, test_size=0.15, random_state=42)
-            train_ids, valid_ids = train_test_split(train_ids, test_size=0.15, random_state=42)
+            train_folds_d, val_folds_d, test_folds_d = create_folds(dataset_subjects, num_folds=args.n_folds, seed=42)
             
-            train_subjects.extend(train_ids.tolist())
-            validation_subjects.extend(valid_ids.tolist())
-            test_subjects.extend(test_ids.tolist())
+            train_subjects.extend(train_folds_d[FOLD])
+            validation_subjects.extend(val_folds_d[FOLD])
+            test_subjects.extend(test_folds_d[FOLD])
 
         model = SplitLatentModel(IN_CHANNELS, args.channels, args.latent_dim, NUM_LAYERS, KERNEL_SIZE, recon_type=args.recon_type, content_cosine=args.content_cosine, time_resolution=args.time_resolution)
         with torch.no_grad():
@@ -301,7 +307,9 @@ if __name__ == '__main__':
             "loss_tags": loss_tags,
             "eval_every": args.eval_every,
             "conversion_N": args.conversion_N,
-            "time_resolution": args.time_resolution
+            "time_resolution": args.time_resolution,
+            "fold": FOLD,
+            "n_folds": args.n_folds
         }
         for l in model.used_losses:
             wandb_config[f"{l}_weight"] = model.loss_weights[l]
