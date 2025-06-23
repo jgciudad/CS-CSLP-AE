@@ -390,7 +390,8 @@ class CustomLoader():
         self.subject_indices = {s: [] for s in range(len(self.unique_subjects))}
         self.get_subject_indices()
         self.task_indices = {t: [] for t in self.unique_tasks}
-        self.get_task_indices()
+        self.species = np.unique(self.table[self.split_indices][COLUMN_SPECIES]).astype(str)
+        
         # self.run_indices = {r: [] for r in self.unique_runs}
         
         # for debugging

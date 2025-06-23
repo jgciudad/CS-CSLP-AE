@@ -374,15 +374,15 @@ if __name__ == '__main__':
         model.eval()
         print('Evaluating...', file=sys.stdout, flush=True)
         subject_latents, task_latents, subjects, tasks, runs, losses = get_split_latents(model, test_loader, test_loader.get_dataloader(batch_size=model.batch_size, random_sample=False))
-        test_results = get_results(subject_latents, task_latents, subjects, tasks, split=test_loader.split, off_class_accuracy=args.full_eval)
+        test_results = get_results(subject_latents, task_latents, subjects, tasks, split=model.loader.split, off_class_accuracy=args.full_eval)
         wandb.log(test_results)
         if args.conversion_results:
-            figure_results, mse_results = get_full_conversion_results(model, test_loader, subject_latents, task_latents, args.conversion_N, True, IN_CHANNELS, args.conversion_channel, config.CHANNELS.index(args.conversion_channel))
+            figure_results, mse_results = get_full_conversion_results(model, test_loader, subject_latents, task_latents, args.conversion_N, True, IN_CHANNELS, args.conversion_channel, config.CHANNELS.index(args.conversion_channel), model.loader.split)
             wandb.log(mse_results)
         if args.extra_classifiers:
-            test_knn_results = get_results(subject_latents, task_latents, subjects, tasks, clf='KNN', fit_clf=fit_knn_fn, split=test_loader.split)
+            test_knn_results = get_results(subject_latents, task_latents, subjects, tasks, clf='KNN', fit_clf=fit_knn_fn, split=model.loader.split)
             wandb.log(test_knn_results)
-            test_etc_results = get_results(subject_latents, task_latents, subjects, tasks, clf='ETC', fit_clf=fit_etc_fn, split=test_loader.split)
+            test_etc_results = get_results(subject_latents, task_latents, subjects, tasks, clf='ETC', fit_clf=fit_etc_fn, split=model.loader.split)
             wandb.log(test_etc_results)
         
         if 'figure_results' not in locals():
@@ -401,7 +401,7 @@ if __name__ == '__main__':
             plot_psd(axs[i//n_samples[1], i%4], x['x'][i].squeeze().cpu().detach().numpy(), config.SAMPLING_RATE)
             plot_psd(axs[i//n_samples[1], i%4], x['x_hat'][i].squeeze().cpu().detach().numpy(), config.SAMPLING_RATE, f"S{i}, MSE: {mse_sample:.4f}, Stage: {model.loader.task_to_label[x['T'][i].item()]}")
         plt.tight_layout()
-        figure_results['results/recon'] = wandb.Image(fig)
+        figure_results[f'results/{model.loader.split}/recon'] = wandb.Image(fig)
         plt.close(fig)
         
         #%%
@@ -422,7 +422,7 @@ if __name__ == '__main__':
         ax[0].legend()
         ax[1].legend()
         plt.tight_layout()
-        figure_results['results/pca'] = wandb.Image(fig)
+        figure_results[f'results/{model.loader.split}/pca'] = wandb.Image(fig)
         plt.close(fig)
         
         #%%
@@ -447,14 +447,14 @@ if __name__ == '__main__':
         ax[1, 1].set_title('TSNE: Task latent colored by subject')
         ax[1, 1].legend(ncol=4, markerscale=8)
         plt.tight_layout()
-        figure_results['results/tsne'] = wandb.Image(fig)
+        figure_results[f'results/{model.loader.split}/tsne'] = wandb.Image(fig)
         plt.close(fig)
         
         #%%
         #Plot confusion matrix
         print('Plotting confusion matrix...', file=sys.stdout, flush=True)
-        subject_cm = test_results['XGB/' + test_loader.split + '/' + 'subject/cm']
-        task_cm = test_results['XGB/' + test_loader.split + '/' + 'task/cm']
+        subject_cm = test_results['XGB/' + model.loader.split + '/' + 'subject/cm']
+        task_cm = test_results['XGB/' + model.loader.split + '/' + 'task/cm']
         fig, axs = plt.subplots(1, 2, figsize=(20, 10))
         ax = axs.flatten()
         for i, which in enumerate(['subject', 'task']):
@@ -470,12 +470,12 @@ if __name__ == '__main__':
             disp.plot(ax=ax[i], xticks_rotation='vertical', cmap='Blues', values_format='.2f')
             disp.ax_.get_images()[0].set_clim(0, 1)
             if which == 'subject':
-                acc = test_results['XGB/test/subject/balanced_accuracy']
+                acc = test_results['XGB/' + model.loader.split + '/subject/balanced_accuracy']
             elif which == 'task':
-                acc = test_results['XGB/test/task/balanced_accuracy']
+                acc = test_results['XGB/' + model.loader.split + '/task/balanced_accuracy']
             ax[i].set_title(f'{which.capitalize()}\nBalanced Accuracy: {100*acc:.2f}%', fontsize=12)
         plt.tight_layout()
-        figure_results['results/cm_fig'] = wandb.Image(fig)
+        figure_results[f'results/{model.loader.split}/cm_fig'] = wandb.Image(fig)
         plt.close(fig)
         plt.close('all')
         print('Uploading to wandb', file=sys.stdout, flush=True)
