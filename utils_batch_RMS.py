@@ -363,7 +363,7 @@ class DelegatedLoader(IterableDataset):
 
 class CustomLoader():
     
-    def __init__(self, config, h5file, subjects: list, split):
+    def __init__(self, config, h5file, subjects: list, split, subsample_size=None):
         
         # TODO: standardization 
         
@@ -403,12 +403,11 @@ class CustomLoader():
                 
         self.species = np.unique(self.table[self.split_indices][COLUMN_SPECIES]).astype(str)
         
-        # self.run_indices = {r: [] for r in self.unique_runs}
+        if subsample_size is not None:
+            if subsample_size > len(self.split_indices):
+                raise ValueError("Subsample size is larger than the number of available samples.")
+            self.split_indices = np.random.choice(self.split_indices, size=subsample_size, replace=False).tolist()
         
-        # for debugging
-        # num_rows = self.table.nrows
-        # sample_size = int(0.1 * num_rows)  # 10% sample
-        # self.random_indices = np.random.choice(num_rows, sample_size, replace=False)
             
         self.total_samples = 0 
         
