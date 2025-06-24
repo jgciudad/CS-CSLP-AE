@@ -321,11 +321,18 @@ def get_eval_results(subject_latents, task_latents, subjects, tasks, split='eval
     y_true = tasks_test
     task_score = balanced_accuracy_score(y_true, y_pred)
     test_results[clf + '/' + split + '/task/score'] = task_score
-    paradigm_trans = {i: i // 2 for i in np.unique(tasks_train)}
-    y_true_trans = np.vectorize(paradigm_trans.get)(y_true)
-    y_pred_trans = np.vectorize(paradigm_trans.get)(y_pred)
-    paradigm_score = balanced_accuracy_score(y_true_trans, y_pred_trans)
-    test_results[clf + '/' + split + '/task/paradigm_wise_accuracy'] = paradigm_score
+    
+    X_subject_train, X_subject_test, subjects_train, subjects_test = train_test_split(subject_latents, subjects, stratify=subjects, test_size=0.2, shuffle=True, random_state=1968125571)
+    flat_idxs = balanced_sample(subjects_train, sampling_method=sampling_method)
+    X_subject_train = X_subject_train[flat_idxs]
+    subjects_train = subjects_train[flat_idxs]
+    
+    subject_clf = fit_clf(X_subject_train, subjects_train)
+    y_pred = subject_clf.predict(X_subject_test)
+    y_true = subjects_test
+    subject_score = balanced_accuracy_score(y_true, y_pred)
+    test_results[clf + '/' + split + '/subject/score'] = subject_score
+    
     return test_results
 
 class DelegatedLoader(IterableDataset):
