@@ -75,7 +75,7 @@ class ConfigLoader:
         self.SAMPLES_LEFT = 0  # I need to double check the loading of the neighbor epochs in the data loader, it might be wrong
         self.SAMPLES_RIGHT = 0
         self.BATCH_SIZE = 32
-        # self.STAGES = config["data"]["stages"]
+        self.STAGE_MAP = config["data"]["stage_map"]
         self.EMG_MODALITY = config["data"]["emg_modality"]
         if self.EMG_MODALITY == "moving_rms":
             try:

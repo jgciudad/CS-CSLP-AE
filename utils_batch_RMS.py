@@ -1,7 +1,8 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
+
 import numpy as np
-from torch.utils.data import IterableDataset
 import torch
+from torch.utils.data import IterableDataset
 from torch.utils.data import DataLoader
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.ensemble import ExtraTreesClassifier
@@ -11,11 +12,9 @@ from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_
 from sklearn.manifold import TSNE
 import seaborn as sns
 from tqdm import tqdm
-from collections import Counter, defaultdict
-import yaml
-from data_table import create_table_description, COLUMN_LABEL, COLUMN_SUBJECT_ID, COLUMN_SPECIES
-import os
-import tables as tb
+
+from data_table import COLUMN_SUBJECT_ID, COLUMN_SPECIES
+from data.preprocessing_utils import label_mapping
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -30,9 +29,9 @@ def split_do_tsne(subject_latents, task_latents):
 
 
 def plot_latents(fig, ax, latents, loader, which='subject', size=1, cmap=None):
-    which_values = None
-    which_values = loader.table[loader.split_indices][COLUMN_LABEL] if which == 'task' else loader.table[loader.split_indices][COLUMN_SUBJECT_ID]
-    which_uniques = loader.unique_tasks if which == 'task' else loader.unique_subjects
+    # which_values = None
+    which_values = loader.table[loader.split_indices]['label'].astype(str) if which == 'task' else loader.table[loader.split_indices]['subject_id'].astype(str)
+    which_uniques = np.unique(which_values)
     if cmap is None:
         cmap = 'tab20' if which == 'task' else 'nipy_spectral'
     color_palette = sns.color_palette(cmap, len(which_uniques))
@@ -42,7 +41,7 @@ def plot_latents(fig, ax, latents, loader, which='subject', size=1, cmap=None):
     for i in which_uniques:
         x, y = latents[which_values == i, 0], latents[which_values == i, 1]
         c = cluster_colors[which_values == i]
-        ax.scatter(x, y, color=c[0], s=size if loader.split == 'train' else 2*size, label=f"{loader.task_to_label[i]}" if which == 'task' else f"{i.decode('utf-8')}", alpha=0.5 if loader.split == 'train' else 1.0)
+        ax.scatter(x, y, color=c[0], s=size if loader.split == 'train' else 2*size, label=i, alpha=0.5 if loader.split == 'train' else 1.0)
         ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
@@ -88,7 +87,7 @@ def get_split_latents_debug(model, loader, dataloader):
     subject_latents = torch.randn(loader.size, 40)
     task_latents = torch.randn(loader.size, 40)
     subjects = loader.table[loader.split_indices][COLUMN_SUBJECT_ID]
-    tasks = loader.table[loader.split_indices][COLUMN_LABEL]
+    tasks = loader.labels_array[loader.split_indices]
     runs = np.zeros_like(subjects)
     losses = 'LOL'
 
@@ -368,6 +367,7 @@ class CustomLoader():
         # self.data_std = data_dict['data_std'].detach().clone().contiguous().to(device)
                 
         self.table = h5file.root.merged_datasets
+        self.labels_array = label_mapping(h5file, config)
         
         # with open(os.path.join(os.path.dirname(config.DATA_FILENAME), 'human_tasks.yaml'), 'r') as file:
         #     self.human_tasks = yaml.safe_load(file)
@@ -379,11 +379,14 @@ class CustomLoader():
         #     self.subject_dict = yaml.safe_load(file)
                 
         self.unique_subjects = subjects
+        
         # self.unique_tasks = set(self.human_tasks.values())
         # self.unique_tasks.update(set(self.mouse_tasks.values()))
         # self.unique_runs = list(range(1, 41))  # Assuming runs are numbered from 1 to 40
-        self.task_to_label = {1: "WAKE", 2: "NREM", 3: "REM", 4: "ARTIFACT"}
-        self.unique_tasks = [1, 2, 3, 4]
+        self.task_to_label = invert_dict(config.STAGE_MAP)
+        
+        self.unique_tasks = [config.STAGE_MAP[k] for k in config.STAGE_MAP if config.STAGE_MAP[k] != -1]
+        self.unique_tasks = np.unique(self.unique_tasks).tolist()
         
         self.split_indices = []
         self.subject_indices = {s: [] for s in range(len(self.unique_subjects))}
@@ -494,7 +497,7 @@ class CustomLoader():
         d = np.concatenate([self.table[samples][c] for c in self.config.CHANNELS if c in ['EEG1', 'EEG2']], axis=1)
         s = self.table[samples][COLUMN_SUBJECT_ID]
         s = np.array([self.unique_subjects.index(s_) for s_ in s])
-        t = self.table[samples][COLUMN_LABEL]
+        t = self.labels_array[samples]
         r =  np.zeros_like(s)
         rms = np.concatenate([self.table[samples][c+"_rms"][..., np.newaxis] for c in self.config.CHANNELS], axis=1)
                 
@@ -512,7 +515,7 @@ class CustomLoader():
         d = np.concatenate([self.table[samples][c] for c in self.config.CHANNELS if c in ['EEG1', 'EEG2']], axis=1)
         s = self.table[samples][COLUMN_SUBJECT_ID]
         s = np.array([self.unique_subjects.index(s_) for s_ in s])
-        t = self.table[samples][COLUMN_LABEL]
+        t = self.labels_array[samples]
         r =  np.zeros_like(s)
         rms = np.concatenate([self.table[samples][c+"_rms"][..., np.newaxis] for c in self.config.CHANNELS], axis=1)
 
@@ -533,7 +536,7 @@ class CustomLoader():
             d = np.concatenate([self.table[i][c] for c in self.config.CHANNELS if c in ['EEG1', 'EEG2']], axis=0)
             s = self.table[i][COLUMN_SUBJECT_ID]
             s = self.unique_subjects.index(s)
-            t = self.table[i][COLUMN_LABEL]
+            t = self.labels_array[i]
             r =  np.zeros_like(s)
             rms = np.concatenate([self.table[i][c+"_rms"][..., np.newaxis] for c in self.config.CHANNELS], axis=0)   
 
@@ -575,3 +578,10 @@ def plot_psd(ax, psd, fs=128, title=None, label=None):
     ax.set_title(title)
     ax.set_xticks(np.linspace(0, psd.shape[0], 8))
     ax.set_xticklabels(np.linspace(0, fs/2, 8, dtype=int))
+
+def invert_dict(d):
+    inverted = defaultdict()
+    for k, v in d.items():
+        if v not in inverted.keys() and v != -1:
+            inverted[v] = k
+    return dict(inverted)

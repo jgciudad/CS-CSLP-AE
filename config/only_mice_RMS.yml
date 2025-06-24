@@ -1,15 +1,9 @@
-dirs:
-  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
-  new_data_filename: 'only_mice_RMS.h5'
-  results_path: '/home/s202283/code/CS-CSLP-AE/results'
-
 data:
   datasets: ['kornum']
   channels: ['EEG2']
-  stages: # only the stages specified here will be loaded. It needs to be specified always that a subset of ['data']['species'] is selected.
-    kornum:
-      WAKE: 0
-      NREM: 1
-      REM: 2
-      ARTIFACT: 3
+  stage_map:
+    WAKE: 0
+    NREM: 1
+    REM: 2
+    ART: -1
   

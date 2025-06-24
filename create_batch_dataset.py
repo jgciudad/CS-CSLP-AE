@@ -22,15 +22,6 @@ from data_table import (
 # TODO
 # create a column for unified labels between humans and mice, and a column with different nrem labels?
 
-stages_map = {"WAKE": 1,
-              "NREM": 2,
-              "REM": 3,
-              "ARTIFACT": 4,
-              "N1": 2,
-              "N2": 2,
-              "N3": 2,
-              }
-
 subjects_dict = {}
 
 
@@ -136,7 +127,7 @@ def transform():
                 write_data_to_table(
                     table,
                     features,
-                    [stages_map[x] for x in labels],
+                    labels,
                     dataset + "_" + recording['subject_id'],
                     preprocessor.species,
                     dataset

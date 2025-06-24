@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.nn import functional as F
-from data_table import COLUMN_LABEL, COLUMN_SUBJECT_ID, COLUMN_SPECIES
+from data_table import COLUMN_SUBJECT_ID, COLUMN_SPECIES
 from matplotlib import pyplot as plt
 import wandb
 
@@ -18,7 +18,7 @@ def sample_latents(loader, subject_latents, task_latents, target_subject, target
     '''
     
     subjects = loader.table[loader.split_indices][COLUMN_SUBJECT_ID]
-    tasks = loader.table[loader.split_indices][COLUMN_LABEL]
+    tasks = loader.labels_array[loader.split_indices]
     species = loader.table[loader.split_indices][COLUMN_SPECIES]
     
     target_species = loader.table.get_where_list(f'{COLUMN_SUBJECT_ID}=={target_subject}')[0]
@@ -110,11 +110,13 @@ def get_reconstructed_erps(model, loader, subject_latents, task_latents, t_spec,
 
 @torch.inference_mode(True)
 def get_conversion_results(model, loader, subject_latents, task_latents, target_subject, target_task, channel, channel_idx, n, axes=None, plot_fcn=None):
-    rows = loader.table.get_where_list('({}=={}) & ({}=={})'.format(COLUMN_SUBJECT_ID, target_subject, COLUMN_LABEL, target_task)).tolist()
+    subject_rows = loader.table.col(COLUMN_SUBJECT_ID) == target_subject # no need to check split, subjects are only in one split
+    task_rows = loader.labels_array == target_task
+    rows = subject_rows & task_rows
     
-    real_erp1 = loader.table[rows][channel]
+    real_erp1 = np.ascontiguousarray(loader.table[rows][channel])
     # real_erp1 = real_erp1.copy()
-    real_erp1 = torch.from_numpy(real_erp1).to(device)
+    real_erp1 = torch.from_numpy(real_erp1.copy()).to(device)
     # real_erp1 = real_erp1.to(device) * loader.data_std + loader.data_mean TODO: fix standardization after transformation
     real_erp1 = real_erp1.mean(0)
     recon_erp_ss1 = get_reconstructed_erps(model, loader, subject_latents, task_latents, 'same', 'same', 'same', target_subject, target_task, n)

@@ -1,9 +1,19 @@
 from mne.time_frequency import psd_array_multitaper
 from scipy.signal import welch, butter, sosfiltfilt
 import numpy as np
-import librosa
 
 
+def label_mapping(h5file, config):
+    
+    table = h5file.root.merged_datasets
+    string_labels = table.col('label')  # returns a NumPy array of byte strings
+    string_labels = string_labels.astype('U')    
+    
+    map_func = np.vectorize(lambda x: config.STAGE_MAP[x])
+    int_labels = map_func(string_labels).astype(np.int32)
+    
+    return int_labels
+            
 def center_windowing(config, signal, stages, original_length, new_length):
     n_subepochs = int(
         original_length / new_length

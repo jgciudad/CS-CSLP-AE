@@ -11,7 +11,7 @@ def create_table_description(config: dict):
 
     table_description = {
         COLUMN_SUBJECT_ID: tables.StringCol(20),
-        COLUMN_LABEL: tables.Int16Col(),
+        COLUMN_LABEL: tables.StringCol(5),
         COLUMN_SPECIES: tables.StringCol(10),
         COLUMN_DATASET: tables.StringCol(20)
     }
