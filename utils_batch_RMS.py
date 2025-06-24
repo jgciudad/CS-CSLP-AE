@@ -22,11 +22,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 def do_tsne(latents):
     tsne_ = TSNE(n_components=2, perplexity=30, n_jobs=-1, random_state=1968125571)
     tsne_latents = tsne_.fit_transform(latents)
-    return tsne_latents, tsne_latents
+    # tsne_latents = np.random.rand(latents.shape[0], 2)
+    return tsne_latents
 
 def split_do_tsne(subject_latents, task_latents):
-    return do_tsne(subject_latents)[0], do_tsne(task_latents)[0]
-
+    return do_tsne(subject_latents), do_tsne(task_latents)
 
 def plot_latents(fig, ax, latents, loader, which='subject', size=1, cmap=None):
     # which_values = None

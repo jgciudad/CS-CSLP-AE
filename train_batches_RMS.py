@@ -105,7 +105,7 @@ parser.add_argument('--conversion_channel', type=str, default='EEG2')
 parser.add_argument('--extra_classifiers', type=int, default=1)
 parser.add_argument('--conversion_results', type=int, default=1)
 
-parser.add_argument('--wandb_disabled', type=bool, default=False)
+parser.add_argument('--wandb_disabled', action='store_true', help='Disable Weights & Biases logging')
 
 args, unknown = parser.parse_known_args()
 
@@ -149,10 +149,8 @@ if __name__ == '__main__':
     OLD_SCHED = bool(args.old_sched)
     
     if args.wandb_disabled:
-        os.environ["WANDB_DISABLED"] = "true"
         wandb_mode = 'offline'
     else:
-        os.environ["WANDB_DISABLED"] = "false"
         wandb_mode = 'online'
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -319,13 +317,10 @@ if __name__ == '__main__':
         extra_tags = []
         if len(args.extra_tags) > 0:
             extra_tags = args.extra_tags.split(",")
-        group = None
-        if len(args.group) > 0:
-            group = args.group
         wandb.init(
             project="converting-erps",
             config=wandb_config,
-            group=group,
+            group=f'{loss_tags}-{config.experiment}',
             name=f'{loss_tags}-{config.RUN_NAME}',
             tags=["split-model", "simple", loss_tags] + model.used_losses + extra_tags,
             mode=wandb_mode
@@ -366,6 +361,9 @@ if __name__ == '__main__':
         
         # %% Save model
         if args.save_model:
+            if not os.path.exists(config.SAVE_RESULTS_PATH):
+                os.makedirs(config.SAVE_RESULTS_PATH)
+                
             save_as = os.path.join(config.SAVE_RESULTS_PATH, f"{config.RUN_NAME}.pt")
             torch.save(model.state_dict(), save_as)
             print(f"Saved model to {save_as}", file=sys.stdout, flush=True)
