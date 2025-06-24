@@ -1,0 +1,14 @@
+dirs:
+  new_data_filename: 'only_mice_NO_RELATIVE_PSD.h5'
+
+data:
+  datasets: ['kornum']
+  channels: ['EEG2']
+  stage_map:
+    WAKE: 0
+    NREM: 1
+    REM: 2
+    ART: -1
+  preprocessing:
+      relative_psd: False
+  

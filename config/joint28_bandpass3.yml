@@ -1,0 +1,57 @@
+general:
+  device: 'cuda'
+
+dirs:
+  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
+  new_data_filename: 'joint28_bandpass3.h5' # emg not filtered
+  save_results_path: ''
+
+data:
+  datasets: ['kornum28_B', 'sleepedf_B']
+  channels: ['EEG2', 'EMG']
+  sampling_rate: 100 # Hz
+  epoch_length: 4 # seconds
+  emg_modality: 'rms' # 'raw' or 'rms'
+  stage_map: # stages with -1 will not be loaded when training, but they will be preprocessed and save in the h5 file.
+  # If several stages are mapped to the same integer, the closer to the top will be used as stage name. 
+    WAKE: 0
+    NREM: 1
+    N1: 1
+    N2: 1
+    N3: 1
+    REM: 2
+    ART: -1
+  preprocessing:
+    method: 'welch' # 'welch' or 'multitaper'
+    relative_psd: True
+    preprocessing_params:
+      nperseg: 200
+      noverlap: 100
+      nfft: 256
+    eeg_bandpass: [0.5, 25] # Hz
+    emg_bandpass: [0.5, 30] # Hz # filter not applied to emg, but parameters can't be empty
+    
+model:
+  hidden_dimensions: 1000 # dimensions in the latent space
+  F1: 8 # number of temporal filters
+  F2: 16 # number of pointwise filters
+  D: 2 # number of spatial filters
+  kernel_1: 64 # kernel size in first Conv2D (temporal filter)
+  kernel_2: 16 # kernel size in separable Conv2D 
+  dropout: 0.25
+  lr: 0.0001
+  beta: 1.0
+
+training:
+  epochs: 200
+  early_stopping: False
+  early_stopping_patience: 4 # number of epochs
+  val_check_interval: 0.5 # evaluation is performed every val_check_interval epochs
+  wandb_project: 'EEG2Vec'
+  samples_per_stage: 3
+  validation_classifier: False
+
+testing:
+  plot_at_testing: False # whether plotting the latent space right after testing
+  n_subset: 15000
+  n_components: 2

@@ -1,0 +1,20 @@
+general:
+  device: 'cuda'
+
+dirs:
+  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
+  new_data_filename: 'joint28_bandpass3.h5'
+  save_results_path: ''
+
+data:
+  datasets: ['sleepedf_B']
+  channels: ['EEG2', 'EMG']
+  stage_map: # stages with -1 will not be loaded when training, but they will be preprocessed and save in the h5 file.
+  # If several stages are mapped to the same integer, the closer to the top will be used as stage name. 
+    WAKE: 0
+    NREM: -1
+    N1: 1
+    N2: 2
+    N3: 3
+    REM: 4
+    ART: -1
