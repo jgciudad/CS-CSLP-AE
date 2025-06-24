@@ -95,9 +95,9 @@ class SleepedfPreprocessor(BasePreprocessor):
                 X = self.emg_filter(X, self.config.SAMPLING_RATE)
                 
             # Normalize data
-            mu = epochs.get_data(old_c_name).mean()
-            std = epochs.get_data(old_c_name).std()
-            X = (epochs.get_data(old_c_name) - mu) / std
+            mu = X.mean()
+            std = X.std()
+            X = (X - mu) / std
             X = X.squeeze()
             
             if new_c_name == "EEG1" or new_c_name == "EEG2":
@@ -121,8 +121,6 @@ class SleepedfPreprocessor(BasePreprocessor):
                     X_rms = np.sqrt(np.mean(X**2, 1))
             
             features[new_c_name+"_rms"] = X_rms
-
-            
 
         labels = [list(epochs.event_id.keys())[list(epochs.event_id.values()).index(id)] for id in epochs.events[:, -1].tolist()]
         

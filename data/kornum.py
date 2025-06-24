@@ -80,7 +80,7 @@ class KornumPreprocessor(BasePreprocessor):
             if row == 3:
                 return "REM"
             if (row != 1) & (row != 2) & (row != 3):
-                return "ARTIFACT"
+                return "ART"
 
         stages = df.apply(int_class_to_string)
 
@@ -118,7 +118,7 @@ class KornumPreprocessor(BasePreprocessor):
 
             s = c_filter(raw_data[c, :], self.config.SAMPLING_RATE) 
 
-            s = (raw_data[c, :] - np.mean(s, keepdims=True)) / np.std(s, keepdims=True)
+            s = (s - np.mean(s, keepdims=True)) / np.std(s, keepdims=True)
 
             reshaped_s = np.reshape(
                 s, (int(s.shape[0] / self.config.SAMPLING_RATE / self.config.EPOCH_LENGTH), -1)

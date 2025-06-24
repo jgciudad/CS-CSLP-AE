@@ -14,9 +14,11 @@ def update_dict(d_to_update: dict, update: dict):
 
     `d_to_update` is updated by `update`"""
     for k, v in update.items():
-        if isinstance(v, collections.abc.Mapping) and k != "stages" and k != "preprocessing_params":
-            # exception: the whole stages dict is always overwritten so that stages specified in
-            # standard_config but not specified in the new config are not included
+        if isinstance(v, collections.abc.Mapping) and k != "preprocessing_params":
+            # exception: the whole preprocessing_params dict is always overwritten so that params specified in
+            # standard_config but not specified in the new config are not loaded. This is because "preprocessing_params"
+            # is directly passed to the preprocessing function, and different functions have different parameters and 
+            # parameter names. 
             d_to_update[k] = update_dict(d_to_update.get(k, {}), v)
         else:
             d_to_update[k] = v
@@ -24,7 +26,7 @@ def update_dict(d_to_update: dict, update: dict):
 
 
 class ConfigLoader:
-    def __init__(self, run_name, experiment="standard_config"):
+    def __init__(self, run_name, fold=-1, experiment="standard_config"):
         """general class to load config from yaml files into fields of an instance of this class
 
         first the config from standard_config.yml is loaded and then updated with the entries in the config file
@@ -43,9 +45,9 @@ class ConfigLoader:
         config = self.load_config()
 
         if run_name=='timestamp':
-            self.RUN_NAME = experiment + '_' + time.strftime("%Y-%m-%d_%H-%M-%S")
+            self.RUN_NAME = experiment + '-f' + str(fold) + '_' + time.strftime("%Y-%m-%d_%H-%M-%S")
         else:
-            self.RUN_NAME = experiment + '_' + run_name
+            self.RUN_NAME = experiment + '-f' + str(fold) + '_' + run_name
         """identifier for the run of the experiment, used in log_file and `VISUALS_DIR`"""
 
         # general
@@ -62,7 +64,6 @@ class ConfigLoader:
             self.SAVE_RESULTS_PATH = join(
                 'results', self.experiment, self.RUN_NAME
             )
-        os.makedirs(self.SAVE_RESULTS_PATH, exist_ok=True)
 
         # data
         self.DATASETS = config["data"]["datasets"]
@@ -91,7 +92,7 @@ class ConfigLoader:
         self.RELATIVE_PSD = config["data"]["preprocessing"]["relative_psd"]
         self.PREPROCESSING_PARAMS = config["data"]["preprocessing"]["preprocessing_params"]
         self.PREPROCESSING_PARAMS["sfreq"] = self.SAMPLING_RATE
-        self.EEG_HIGHPASS = config["data"]["preprocessing"]["eeg_bandpass"]
+        self.EEG_BANDPASS = config["data"]["preprocessing"]["eeg_bandpass"]
         self.EMG_BANDPASS = config["data"]["preprocessing"]["emg_bandpass"]
 
 
