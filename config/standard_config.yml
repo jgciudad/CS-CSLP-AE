@@ -7,7 +7,7 @@ dirs:
   save_results_path: ''
 
 data:
-  datasets: ['sleepedf', 'kornum']
+  datasets: ['sleepedf_discarded', 'kornum28']
   channels: ['EEG1', 'EEG2', 'EMG']
   sampling_rate: 100 # Hz
   epoch_length: 4 # seconds
@@ -26,7 +26,7 @@ data:
     relative_psd: True
     preprocessing_params:
       nperseg: 200
-      noverlap: 185
+      noverlap: 100
       nfft: 256
     eeg_bandpass: [0.5, 25] # Hz
     emg_bandpass: 10 # Hz

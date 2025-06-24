@@ -1,0 +1,16 @@
+dirs:
+  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
+  new_data_filename: 'all_data_sleepedf_discarded.h5' # change back to all_data.h5
+  save_results_path: ''
+
+data:
+  datasets: ['sleepedf_discarded']
+  channels: ['EEG2', 'EMG']
+  stage_map:
+    WAKE: 0
+    NREM: -1
+    N1: 1
+    N2: 1
+    N3: 1
+    REM: 2
+    ART: -1

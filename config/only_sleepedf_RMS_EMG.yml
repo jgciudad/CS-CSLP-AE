@@ -1,0 +1,11 @@
+data:
+  datasets: ['sleepedf']
+  channels: ['EEG2', 'EMG']
+  stage_map:
+    WAKE: 0
+    NREM: -1
+    N1: 1
+    N2: 2
+    N3: 3
+    REM: 4
+    ART: -1

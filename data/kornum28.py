@@ -169,14 +169,14 @@ class Kornum28Preprocessor(BasePreprocessor):
             if channel == "EEG EEG1A-B":
                 c_name = "EEG1"
                 c_filter = self.eeg_filter
-                s = c_filter(raw_data[c, :], self.config.SAMPLING_RATE) 
             elif channel == "EEG EEG2A-B":
                 c_name = "EEG2"
                 c_filter = self.eeg_filter
-                s = c_filter(raw_data[c, :], self.config.SAMPLING_RATE) 
             elif channel == "EMG EMG":
                 c_name = "EMG"
-                s = raw_data[c, :]
+                c_filter = self.emg_filter
+
+            s = c_filter(raw_data[c, :], self.config.SAMPLING_RATE) 
 
             s = (s - np.mean(s, keepdims=True)) / np.std(s, keepdims=True)
 

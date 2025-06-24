@@ -22,7 +22,6 @@ def center_windowing(config, signal, stages, original_length, new_length):
     center_subepochs = np.zeros(
         (
             signal.shape[0] * n_subepochs,
-            signal.shape[1],
             config.EPOCH_LENGTH * config.SAMPLING_RATE,
         )
     )  # array to store the subepochs
@@ -40,7 +39,6 @@ def center_windowing(config, signal, stages, original_length, new_length):
             )
             subepoch = signal[
                 epoch,
-                :,
                 subepoch_start : subepoch_start
                 + int(config.EPOCH_LENGTH * config.SAMPLING_RATE),
             ]
@@ -90,7 +88,7 @@ class MultitaperPreprocessor:
         
         # psd = librosa.power_to_db(psd)
 
-        return psd[:, 1:], freqs, freqs[1:]
+        return psd[:, 1:], freqs[1:]
 
 
 class WelchPreprocessor:
