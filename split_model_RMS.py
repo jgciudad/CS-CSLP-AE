@@ -682,10 +682,8 @@ class SplitLatentModel(BaselineModel):
                             Q_batch_size = self.batch_size
                         else:
                             Q_batch_size = self.batch_size // 4
-                        subjects1 = np.random.choice(np.arange(len(self.loader.unique_subjects)), Q_batch_size, replace=True)
-                        subjects2 = np.random.choice(np.arange(len(self.loader.unique_subjects)), Q_batch_size, replace=True)
-                        tasks1 = np.random.choice(self.loader.unique_tasks, Q_batch_size, replace=True)
-                        tasks2 = np.random.choice(self.loader.unique_tasks, Q_batch_size, replace=True)
+                        
+                        subjects1, tasks1, subjects2, tasks2 = self.sample_valid_quadruplet_combinations(Q_batch_size)
                         all_subjects = np.concatenate([subjects1, subjects1, subjects2, subjects2])
                         all_tasks = np.concatenate([tasks1, tasks2, tasks1, tasks2])
                         all_x, all_rms= self.loader.sample_by_condition(all_subjects, all_tasks)
@@ -769,3 +767,40 @@ class SplitLatentModel(BaselineModel):
         s, t = self.subject_task_encode(x)
         x_hat = self.subject_task_decode(s, t)
         return x_hat
+    
+    
+    def sample_valid_quadruplet_combinations(self, batch_size):
+        # Sample quadruplet combinations and ensure all permutations are valid
+
+        subjects1 = []
+        subjects2 = []
+        tasks1 = []
+        tasks2 = []
+        
+        for _ in range(batch_size):
+            # Keep sampling until we find valid quadruplet
+            attempts = 0
+            max_attempts = 100
+            while attempts < max_attempts:
+                # Sample randomly from all subjects and tasks
+                s1 = np.random.choice(len(self.loader.unique_subjects))
+                s2 = np.random.choice(len(self.loader.unique_subjects))
+                t1 = np.random.choice(self.loader.unique_tasks)
+                t2 = np.random.choice(self.loader.unique_tasks)
+                
+                # Check if all 4 combinations (s1,t1), (s1,t2), (s2,t1), (s2,t2) are valid
+                if (len(self.loader.full_indices[s1][t1]) > 0 and
+                    len(self.loader.full_indices[s1][t2]) > 0 and
+                    len(self.loader.full_indices[s2][t1]) > 0 and
+                    len(self.loader.full_indices[s2][t2]) > 0):
+                    subjects1.append(s1)
+                    subjects2.append(s2)
+                    tasks1.append(t1)
+                    tasks2.append(t2)
+                    break
+                attempts += 1
+            
+            if attempts == max_attempts:
+                raise ValueError("Could not find valid quadruplet combinations after multiple attempts")
+        
+        return np.array(subjects1), np.array(tasks1), np.array(subjects2), np.array(tasks2)

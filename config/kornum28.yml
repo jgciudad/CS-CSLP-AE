@@ -1,11 +1,3 @@
-general:
-  device: 'cuda'
-
-dirs:
-  new_data_path: '/scratch/s202283/data/CSLP_kornum/'
-  new_data_filename: 'joint28.h5'
-  save_results_path: ''
-
 data:
   datasets: ['kornum28']
   channels: ['EEG2', 'EMG']
@@ -13,8 +5,8 @@ data:
   # If several stages are mapped to the same integer, the closer to the top will be used as stage name. 
     WAKE: 0
     NREM: 1
-    N1: 1
-    N2: 1
-    N3: 1
+    N1: -1
+    N2: -1
+    N3: -1
     REM: 2
     ART: -1

@@ -7,7 +7,7 @@ dirs:
   save_results_path: ''
 
 data:
-  datasets: ['sleepedf_discarded', 'kornum28']
+  datasets: ['sleepedf', 'kornum28']
   channels: ['EEG1', 'EEG2', 'EMG'] # only for training, all ['EEG1', 'EEG2', 'EMG'] are always preprocessed and saved in the h5 file.
   sampling_rate: 100 # Hz
   epoch_length: 4 # seconds
