@@ -48,7 +48,7 @@ def write_data_to_table(
     for l_idx, label in enumerate(labels):
         try:
             sample[COLUMN_SUBJECT_ID] = subject_id
-            for c in config.CHANNELS:
+            for c in features.keys():
                 if 'EEG' in c:
                     sample[c] = features[c][l_idx]
                     

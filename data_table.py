@@ -15,7 +15,7 @@ def create_table_description(config: dict):
         COLUMN_SPECIES: tables.StringCol(10),
         COLUMN_DATASET: tables.StringCol(20)
     }
-    for c in config.CHANNELS:
+    for c in ['EEG1', 'EEG2', 'EMG']:
         if 'EEG' in c:
             table_description[c] = tables.Float32Col(shape=(1, n_sample_values))
         
